@@ -5,14 +5,16 @@ typedef struct _token {
 		struct _token *next; 	// next pointe vers le prochain token.
 		} _Token;
 
-typedef struct _treeNode
+typedef struct treeNode
 {
-	void* nodeData;
-	struct _treeNode* parent;
-	struct _treeNode* nextSib;
-	struct _treeNode* prevSib;
-	struct _treeNode* child;
-} treeNode;
+	long tag;
+	int rulenameID;
+	char* start, length;
+	struct treeNode* parent;
+	struct treeNode* nextSib;
+	struct treeNode* prevSib;
+	struct treeNode* child;
+} _treeNode;
 
 // Fonction qui retourne un pointeur (type opaque) vers la racine de l'arbre construit. 
 void *getRootTree();
@@ -26,11 +28,11 @@ _Token *searchTree(void *start,char *name);
 // et indique (si len!=NULL) dans *len la longueur de cette chaine.
 char *getElementTag(void *node,int *len);
 
-// fonction qui renvoie un pointeur vers char indiquant la valeur du noeud. (la partie correspondnant à la rulename dans la requete HTTP ) 
+// fonction qui renvoie un pointeur vers char indiquant la valeur du noeud. (la partie correspondant à la rulename dans la requete HTTP)
 // et indique (si len!=NULL) dans *len la longueur de cette chaine.
 char *getElementValue(void *node,int *len);
 
-// Fonction qui supprime et libere la liste chainée de reponse. 
+// Fonction qui supprime et libere la liste chainée de réponse.
 void purgeElement(_Token **r);
 
 // Fonction qui supprime et libere toute la mémoire associée à l'arbre. 

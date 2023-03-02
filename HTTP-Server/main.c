@@ -29,7 +29,7 @@
 #endif
 
 
-#define true 0 
+#define true 1 
 #define false 0 
 
 int main(int argc,char *argv[])
