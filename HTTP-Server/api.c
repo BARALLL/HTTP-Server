@@ -71,8 +71,9 @@ void deleteNode(_Token** _tList, _treeNode** _tSibList, _treeNode* node)
     prev->next = NULL;
 
     _treeNode* currNode = curr->node;
-    purgeTree(currNode);
-    removeSibling((currNode->parent)->child, currNode);
+    purgeTree(currNode);            //del under recursively all child under this parent
+    //removeSibling((currNode->parent)->child, currNode);
+    currNode->prevSib->nextSib = currNode->nextSib;
 
     free(curr);
 }
