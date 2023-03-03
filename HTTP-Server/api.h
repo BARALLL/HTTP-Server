@@ -9,8 +9,8 @@ typedef struct treeNode
 {
 	long tag;
 	int rulenameID;
-	char* start, length;
-	struct treeNode* parent;
+	char* start, length;	//length is ptr to end char of the chain
+	struct treeNode* parent;	//can be defined as length
 	struct treeNode* nextSib;
 	struct treeNode* prevSib;
 	struct treeNode* child;
@@ -40,3 +40,6 @@ void purgeTree(void *root);
 
 // L'appel à votre parser un char* et une longueur à parser.  
 int parseur(char *req, int len);
+
+
+void addToken(_Token** _tList, void* node);

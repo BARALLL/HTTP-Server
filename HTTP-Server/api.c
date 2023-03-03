@@ -12,36 +12,48 @@ void* getRootTree()
 
 void addToken(_Token** _tList, void* node) {
     _Token* newToken = (_Token*)malloc(sizeof(_Token));
-    newToken->next = NULL;
-    newToken->node = node;
-
-    if (*_tList == NULL)
-        *_tList = newToken;
-    else 
+    if (newToken)
     {
-        _Token* currToken = *_tList;
-        while (currToken->next != NULL)
-            currToken = currToken->next;
+        newToken->next = NULL;
+        newToken->node = node;
 
-        currToken->next = newToken;
+        if (*_tList == NULL)
+            *_tList = newToken;
+        else 
+        {
+            _Token* currToken = *_tList;
+            while (currToken->next != NULL)
+                currToken = currToken->next;
+
+            currToken->next = newToken;
+        }
     }
+    else
+        printf("Error S100: Memory not allocated\n");
 }
 
-void addSibling(_treeNode** _tSibList, _treeNode* node) {
+void addSibling(_treeNode** _tSibList, long tag, int rulenameID, char* start, char* length) {
     _treeNode* newSibling = (_treeNode*)malloc(sizeof(_treeNode));
-    //newToken->next = NULL;
-    //newToken->node = node;
-
-    if (*_tSibList == NULL)
-        *_tSibList = newSibling;
-    else
+    if (newSibling)
     {
-        _treeNode* currToken = *_tSibList;
-        while (currToken->nextSib != NULL)
-            currToken = currToken->nextSib;
+        newSibling->tag = tag;
+        newSibling->rulenameID = rulenameID;
+        newSibling->start = start;
+        newSibling->length = length;
 
-        currToken->nextSib = newSibling;
+        if (*_tSibList == NULL)
+            *_tSibList = newSibling;
+        else
+        {
+            _treeNode* currToken = *_tSibList;
+            while (currToken->nextSib != NULL)
+                currToken = currToken->nextSib;
+
+            currToken->nextSib = newSibling;
+        }
     }
+    else
+        printf("Error S100: Memory not allocated\n");
 }
 
 
@@ -123,23 +135,6 @@ _treeNode* searchSibling(_treeNode** _tSibList, char* typeofsearch, void* elemof
 }
 
 
-long removeToken(long* param_1)
-{
-    long lVar1;
-    if (param_1 == 0) 
-    {
-        lVar1 = 0;
-    }
-    else 
-    {
-        lVar1 = *param_1;
-        if (lVar1 != 0) {
-            *param_1 = *(long*)(lVar1 + 8);
-            return lVar1;
-        }
-    }
-    return lVar1;
-}
 
 
 _Token* searchTree(void* start, char* name) {
@@ -153,19 +148,22 @@ _Token* searchTree(void* start, char* name) {
 
     if (strcmp(startNode->tag, name) == 0) 
         _tLFound->node = startNode;
-    else recursiveSearch(startNode, name, _tLFound);       // /!\
+    else recursiveSearch(startNode, name, _tLFound);       // TODO
 
     if (_tLFound->node == NULL && _tLFound->next == NULL)
     {
         free(_tLFound);
-        //printf("Error S101: No node containing %s found\n", name);
+        //printf("Error S110: No node containing %s found\n", name);
         return NULL;
     }
     return _tLFound;
 }
 
 
-void recursiveSearch(void* startNode, char* name, _Token* _tLFound) {}
+void recursiveSearch(void* startNode, char* name, _Token* _tLFound) 
+{
+
+}
 
 
 
@@ -245,3 +243,9 @@ void purgeTree(void* root)      //supprime tout l'arbre genealogique en partant 
     }
     root = NULL;
 */
+
+
+int parseur(char* req, int len)
+{
+
+}
