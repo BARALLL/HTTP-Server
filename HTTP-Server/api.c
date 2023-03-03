@@ -311,7 +311,10 @@ void _showRecursive(void* node, int count)
         _showRecursive(child, count++);
         for (int i = 0; i < count; i++)
             printf("|    ");
-        //printf("", (_treeNode*)node)->tag);
-            
+        for(char* ptr = ((_treeNode*)node)->tag; ptr != '\0'; ptr++)
+            printf("%c", *ptr);
+        for (char* ptr = ((_treeNode*)node)->start; ptr != ((_treeNode*)node)->start + ((_treeNode*)node)->start[((_treeNode*)node)->length]; ptr++)
+            printf("%c", *ptr);                              // <=> ptr != start + start[length]
+        printf("\n");
     }
 }
