@@ -5,14 +5,22 @@ typedef struct _token {
 		struct _token *next; 	// next pointe vers le prochain token.
 		} _Token;
 
+
+
+//char* tag;
+//int rulenameID;	//might not be useful
+//char* start;		//value of rulename
+//int length;		//length of char* start
+//struct treeNode* parent, nextSib, prevSib, child;
 typedef struct treeNode
 {
-	long tag;
+	char* tag;
 	int rulenameID;
-	char* start, length;	//length is ptr to end char of the chain
-	struct treeNode* parent;	//can be defined as length
-	struct treeNode* nextSib;
+	char* start;
+	int length;		//length of char* start
+	struct treeNode* parent;
 	struct treeNode* prevSib;
+	struct treeNode* nextSib;
 	struct treeNode* child;
 } _treeNode;
 
@@ -41,5 +49,23 @@ void purgeTree(void *root);
 // L'appel à votre parser un char* et une longueur à parser.  
 int parseur(char *req, int len);
 
-
+//add token to list of Token
 void addToken(_Token** _tList, void* node);
+
+// recursive research in tree, util function for searchTree
+void _searchRecursive(void* node, char* name, _Token** result);
+
+
+//Add a sibling to node list. Make sure to add it to _Token List as well
+//can add child to node by giving node->child as _tSibList parameter
+void addSibling(_treeNode** _tSibList, _treeNode* parent, char* tag, int rulenameID, char* start, int length);
+
+//Remove sibling from sibling node list and from _Token list. Remove recursively all child
+void deleteNode(_Token** _tList, _treeNode** _tSibList, _treeNode* node);
+
+//Unused. Remove sibling from sibling node list
+void removeSibling(_treeNode** _tSibList, _treeNode* node);
+
+
+//get the first sibling from anywhere in the sibling list
+void* getFirstChild(void* node);

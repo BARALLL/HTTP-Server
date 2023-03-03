@@ -142,8 +142,6 @@
     <ClCompile Include="api.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="mman.c" />
-    <ClCompile Include="p2.c" />
-    <ClCompile Include="parser.c" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="example.txt" />
