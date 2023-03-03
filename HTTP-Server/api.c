@@ -4,16 +4,57 @@
 #include <stdlib.h>
 
 
-static _Token* root;
+static _Token* root = NULL;
 static char* rulenames[] = { "inter", "term" };
 
 void* getRootTree()
 {
+    return &root;
+}
+
+void* getRoot()
+{
     return root;
 }
 
+void* toNode(char* tag, int rulenameID, char* start, int length, _treeNode** parent)
+{
+    _treeNode* node = (_treeNode*)calloc(1, sizeof(_treeNode));
+    if (node)
+    {
+        node->tag = tag;
+        node->rulenameID = rulenameID;
+        node->start = start;
+        node->length = length;
+        node->parent = *parent;
+        if (*parent)
+        {
+            _treeNode* ptr = (*parent)->child;
+            if (ptr) {
+                while (ptr->nextSib != NULL)
+                    ptr = ptr->nextSib;    //look for last child   
+                node->prevSib = ptr;    //already one child before
+                ptr->nextSib = node;
+            }
+            else (*parent)->child = node; //and node->prevSib = NULL but already done by calloc
+            //node->nextSib = NULL; //done by calloc
+            //node->child = NULL;
+        }
+        else
+        {
+            node->nextSib = NULL;
+            node->prevSib = NULL;
+            node->child = NULL;
+        }
+    }
+    else
+        printf("Error S100: Memory not allocated\n");
+    addToken(&root, node);
+    return node;
+}
+
 void addToken(_Token** _tList, void* node) {
-    _Token* newToken = (_Token*)malloc(sizeof(_Token));
+    _Token* newToken = (_Token*)calloc(1, sizeof(_Token));
     if (newToken)
     {
         newToken->next = NULL;
@@ -36,32 +77,24 @@ void addToken(_Token** _tList, void* node) {
 
 
 
-void addSibling(_treeNode** _tSibList, _treeNode* parent, char* tag, int rulenameID, char* start, int length) 
+void addSibling(_treeNode* _tSibList, _treeNode* node) 
 {
-    _treeNode* newSibling = (_treeNode*)malloc(sizeof(_treeNode));
-    if (newSibling)
+    addToken(root, node);
+
+    if (_tSibList == NULL)
     {
-        newSibling->tag = tag;
-        newSibling->rulenameID = rulenameID;
-        newSibling->start = start;
-        newSibling->length = length;
-        newSibling->parent = parent;
-        newSibling->child = NULL;
-
-        if (*_tSibList == NULL)
-            *_tSibList = newSibling;
-        else
-        {
-            _treeNode* currToken = *_tSibList;
-            while (currToken->nextSib != NULL)
-                currToken = currToken->nextSib;
-
-            currToken->nextSib = newSibling;
-
-        }
-    }
+        _tSibList = node;
+        node->parent->child = node; //says to parent 'hey i'm your child'
+    } 
     else
-        printf("Error S100: Memory not allocated\n");
+    {
+        _treeNode* currToken = _tSibList;
+        while (currToken->nextSib != NULL)
+            currToken = currToken->nextSib;
+
+        currToken->nextSib = node;
+
+    }
 }
 
 
@@ -247,9 +280,9 @@ char* getElementValue(void* node, int* len) //pour get la rulename
 }
 
 
-void purgeElement(_Token** root) {
+void purgeElement(_Token** r) {
     
-    _Token* currToken = *root;
+    _Token* currToken = *r;
 
     while (currToken != NULL) 
     {
@@ -257,7 +290,7 @@ void purgeElement(_Token** root) {
         currToken = currToken->next;
         free(tmp);
     }
-    *root = NULL;
+    *r = NULL;
 }
 
 
@@ -297,24 +330,62 @@ int parseur(char* req, int len)
 }
 
 
-void* showTree(void* start) {
-    if (start == NULL) start = getRootTree();
-    char* chain = malloc(100 * sizeof(char));
-    char* ptr = chain;
-    _showRecursive(start, 0);
+
+void printNode(void* node)
+{
+    char* ptr = ((_treeNode*)node)->tag;
+    if (ptr != NULL)
+    {
+        for (; *ptr != '\0' && ptr != NULL; ptr++)
+            printf("%c", *ptr);
+    }
+    else printf("null");
+
+    printf(" - ");
+    printf("%s", rulenames[((_treeNode*)node)->rulenameID]);
+    printf(" - ");
+    if ((ptr = ((_treeNode*)node)->start) != NULL)
+    {
+        for (; ptr != &((_treeNode*)node)->start[((_treeNode*)node)->length]; ptr++)
+            printf("%c", *ptr);                              // <=> ptr != start[length]
+    }
+    else printf("null");
+    printf("\n");
+}
+
+void showToken(_Token* start)
+{
+    if (start->next != NULL)
+    {
+        _Token* ptr = start;
+        while (ptr->next)
+        {
+            printNode(ptr->node);
+            //printf("%p", ptr);
+            ptr = ptr->next;
+        }
+
+    }
+}
+
+void showTree(void* start) {
+    if (start == NULL) start = getRoot();
+    printf("\n\n");
+    printNode(start);
+    _showRecursive(start, 1);
 }
 
 // recursive tree show
 void _showRecursive(void* node, int count)
 {
-    for (void* child = ((_treeNode*)node)->child; child != NULL; child = ((_treeNode*)child)->nextSib) {
-        _showRecursive(child, count++);
-        for (int i = 0; i < count; i++)
-            printf("|    ");
-        for(char* ptr = ((_treeNode*)node)->tag; ptr != '\0'; ptr++)
-            printf("%c", *ptr);
-        for (char* ptr = ((_treeNode*)node)->start; ptr != ((_treeNode*)node)->start + ((_treeNode*)node)->start[((_treeNode*)node)->length]; ptr++)
-            printf("%c", *ptr);                              // <=> ptr != start + start[length]
-        printf("\n");
+    if (((_treeNode*)node)->child != NULL)
+    {
+        for (void* child = ((_treeNode*)node)->child; child != NULL; child = ((_treeNode*)child)->nextSib)
+        {
+            for (int i = 0; i < count; i++)
+                printf("|    ");
+            printNode(child);
+            _showRecursive(child, count + 1);
+        }
     }
 }

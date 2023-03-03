@@ -33,6 +33,7 @@
 #define true 1 
 #define false 0 
 
+/*
 int main(int argc,char *argv[])
 {
 	int res,fi;
@@ -40,12 +41,12 @@ int main(int argc,char *argv[])
     struct stat st;
 
 	if (argc < 2 ) { printf("Usage: httpparser <file> <search>\nAttention <search> is case sensitive\n");  return 0; }
-	/* ouverture du fichier contenant la requête */ 
+	// ouverture du fichier contenant la requête
 	if ((fi=_open(argv[1],O_RDWR)) == -1) {
                 perror("open");
                 return false;
         }
-        if (fstat(fi, &st) == -1)           /* To obtain file size */
+        if (fstat(fi, &st) == -1)           //To obtain file size
                 return false;
         if ((addr=mmap(NULL,st.st_size,PROT_WRITE,MAP_PRIVATE, fi, 0)) == NULL )
                 return false;
@@ -80,4 +81,25 @@ int main(int argc,char *argv[])
 	}
 	_close(fi);
 	return(res); 
+}
+*/
+
+int main()
+{
+	//_treeNode* node = &(_treeNode){NULL, 0, NULL, 0, getRootTree(), NULL, NULL, NULL};
+	
+	_treeNode* node = toNode("a", 0, NULL, 0, getRootTree());
+	printf("parent%p prev%p next%p child%p\n", node->parent, node->prevSib, node->nextSib, node->child);
+	
+	_treeNode* newNode = toNode("b", 0, NULL, 0, &node);
+	//addSibling(node->child, newNode);
+	printf("parent%p prev%p next%p child%p\n", newNode->parent, newNode->prevSib, newNode->nextSib, newNode->child);
+
+	_treeNode* newNodeSib = toNode("c", 0, NULL, 0, &node);
+	_treeNode* newNodeChildOfSib = toNode("d", 0, NULL, 0, &newNodeSib);
+	
+	printf("%p", getRootTree());
+	//showTree(NULL);
+//	showToken(getRoot());
+	showTree(node);
 }

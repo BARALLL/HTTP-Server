@@ -11,7 +11,7 @@ typedef struct _token {
 //int rulenameID;	//might not be useful
 //char* start;		//value of rulename
 //int length;		//length of char* start
-//struct treeNode* parent, nextSib, prevSib, child;
+//struct treeNode* parent, prevSib, nextSib, child;
 typedef struct treeNode
 {
 	char* tag;
@@ -58,7 +58,8 @@ void _searchRecursive(void* node, char* name, _Token** result);
 
 //Add a sibling to node list. Make sure to add it to _Token List as well
 //can add child to node by giving node->child as _tSibList parameter
-void addSibling(_treeNode** _tSibList, _treeNode* parent, char* tag, int rulenameID, char* start, int length);
+//unused, replaced by toNode()
+void addSibling(_treeNode* _tSibList, _treeNode* node);
 
 //Remove sibling from sibling node list and from _Token list. Remove recursively all child
 void deleteNode(_Token** _tList, _treeNode** _tSibList, _treeNode* node);
@@ -69,3 +70,12 @@ void removeSibling(_treeNode** _tSibList, _treeNode* node);
 
 //get the first sibling from anywhere in the sibling list
 void* getFirstChild(void* node);
+
+
+void _showRecursive(void* node, int count);
+
+void showTree(void* start);
+
+void* toNode(char* tag, int rulenameID, char* start, int length, _treeNode** parent);
+
+void showToken(_Token* start);
