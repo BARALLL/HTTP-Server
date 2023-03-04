@@ -113,24 +113,41 @@ void removeSibling(_treeNode** _tSibList, _treeNode* node)
 }
 
 
-void deleteNode(_Token** _tList, _treeNode** _tSibList, _treeNode* node)
-{  
+void deleteNode(_Token** _tList, _treeNode* node)
+{
     _Token* curr = *_tList;
     _Token* prev = NULL;
-    while (curr->next)          //del in the token list
-    {
-        prev = curr;
-        curr = curr->next;
-    }
-    if(prev)
-        prev->next = NULL;
 
-    _treeNode* currNode = curr->node;
-    purgeTree(currNode);            //del under recursively all child under this parent
-    currNode->prevSib->nextSib = currNode->nextSib;
-    free(currNode);
-    free(curr);
+    if (curr != NULL && curr->node == node) 
+    {
+        *_tList = curr->next;
+        free(curr);
+        return;
+    }
+    else 
+    {
+        while (curr != NULL && curr->node != node) {
+            prev = curr;
+            curr = curr->next;
+        }
+
+        if (curr == NULL) 
+        {
+            printf("Error S102: Node not found in Token list\n");
+        }
+        else
+        {
+            prev->next = curr->next;
+
+            prev->next = curr->next;
+            node->prevSib->nextSib = node->nextSib;
+            purgeTree(node);            //del under recursively all child under this parent
+            //free(node);                //del node and del in token list
+            free(curr);
+        }
+    }
 }
+
 
 
 _treeNode* searchSibling(_treeNode** _tSibList, char* typeofsearch, void* elemofsearch)
@@ -280,7 +297,8 @@ char* getElementValue(void* node, int* len) //pour get la rulename
 }
 
 
-void purgeElement(_Token** r) {
+void purgeElement(_Token** r) //supprime toute la liste chainée de _Token
+{
     
     _Token* currToken = *r;
 
@@ -294,21 +312,21 @@ void purgeElement(_Token** r) {
 }
 
 
-void purgeTree(void* root)      //supprime tout l'arbre genealogique en partant du parent root 
+void purgeTree(void* start)      //supprime tout l'arbre genealogique en partant du parent root 
 {
     //root = (_treeNode*)root;
-    if (((_treeNode*)root)->child != NULL)
+    if (((_treeNode*)start)->child != NULL)
     {
-        purgeTree(((_treeNode*)root)->child);
+        purgeTree(((_treeNode*)start)->child);
     }
-    _treeNode* tmp = (_treeNode*)root;
-    while (root != NULL)
+    _treeNode* tmp = (_treeNode*)start;
+    while (start != NULL)
     {
-        tmp = root;
-        root = ((_treeNode*)root)->nextSib;
+        tmp = start;
+        start = ((_treeNode*)start)->nextSib;
         free(tmp);
     }
-    root = NULL;
+    start = NULL;
 }
 
 

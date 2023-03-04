@@ -62,7 +62,7 @@ void _searchRecursive(void* node, char* name, _Token** result);
 void addSibling(_treeNode* _tSibList, _treeNode* node);
 
 //Remove sibling from sibling node list and from _Token list. Remove recursively all child
-void deleteNode(_Token** _tList, _treeNode** _tSibList, _treeNode* node);
+void deleteNode(_Token** _tList, _treeNode* node);
 
 //Unused. Remove sibling from sibling node list
 void removeSibling(_treeNode** _tSibList, _treeNode* node);

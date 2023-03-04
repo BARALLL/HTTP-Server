@@ -100,6 +100,8 @@ int main()
 	
 	printf("%p", getRootTree());
 	//showTree(NULL);
-//	showToken(getRoot());
+	//showToken(getRoot());
+	showTree(node);
+	deleteNode(getRootTree(), newNodeSib);
 	showTree(node);
 }
