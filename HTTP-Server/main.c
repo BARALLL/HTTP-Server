@@ -98,7 +98,6 @@ int main()
 	_treeNode* newNodeSib = toNode("c", 0, NULL, 0, &node);
 	_treeNode* newNodeChildOfSib = toNode("d", 0, NULL, 0, &newNodeSib);
 	
-	printf("%p", getRootTree());
 	//showTree(NULL);
 	//showToken(getRoot());
 	showTree(node);

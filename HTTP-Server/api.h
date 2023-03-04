@@ -49,33 +49,47 @@ void purgeTree(void *root);
 // L'appel à votre parser un char* et une longueur à parser.  
 int parseur(char *req, int len);
 
-//add token to list of Token
+
+
+
+//add token to list of _Token
 void addToken(_Token** _tList, void* node);
+
 
 // recursive research in tree, util function for searchTree
 void _searchRecursive(void* node, char* name, _Token** result);
 
 
+//Unused, replaced by toNode()
 //Add a sibling to node list. Make sure to add it to _Token List as well
 //can add child to node by giving node->child as _tSibList parameter
-//unused, replaced by toNode()
 void addSibling(_treeNode* _tSibList, _treeNode* node);
 
-//Remove sibling from sibling node list and from _Token list. Remove recursively all child
+//Remove sibling from sibling node list and from _Token list. Remove recursively all child of node
 void deleteNode(_Token** _tList, _treeNode* node);
 
-//Unused. Remove sibling from sibling node list
+//Unused
+//Remove sibling from sibling node list
 void removeSibling(_treeNode** _tSibList, _treeNode* node);
 
 
+//Unused
 //get the first sibling from anywhere in the sibling list
 void* getFirstChild(void* node);
 
 
+//util function to print a node
+void printNode(void* node);
+
+//show _Token linked list (linked list of nodes)
+void showToken(_Token* start);
+
+// recursive show of node in tree, util function for showTree
 void _showRecursive(void* node, int count);
 
+//show the tree from start node
 void showTree(void* start);
 
-void* toNode(char* tag, int rulenameID, char* start, int length, _treeNode** parent);
 
-void showToken(_Token* start);
+//create and add node to _Token list and to the tree given the parent and the node datas
+void* toNode(char* tag, int rulenameID, char* start, int length, _treeNode** parent);

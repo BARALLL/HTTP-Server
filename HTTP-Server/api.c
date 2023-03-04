@@ -387,7 +387,7 @@ void showToken(_Token* start)
 }
 
 void showTree(void* start) {
-    if (start == NULL) start = getRoot();
+    if (start == NULL) start = root->node;
     printf("\n\n");
     printNode(start);
     _showRecursive(start, 1);
