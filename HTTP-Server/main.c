@@ -87,7 +87,7 @@ int main(int argc,char *argv[])
 int main()
 {
 	//_treeNode* node = &(_treeNode){NULL, 0, NULL, 0, getRootTree(), NULL, NULL, NULL};
-	
+/*
 	_treeNode* node = toNode("a", 0, NULL, 0, getRootTree());
 	printf("parent%p prev%p next%p child%p\n", node->parent, node->prevSib, node->nextSib, node->child);
 	
@@ -103,4 +103,8 @@ int main()
 	showTree(node);
 	deleteNode(getRootTree(), newNodeSib);
 	showTree(node);
+	*/
+	char* req = "startWS-?7-t_?fin\n";
+	int ret = parseur(req, strlen(req));
+	printf("val retour %d", ret);
 }

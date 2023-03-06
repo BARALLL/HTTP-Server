@@ -12,7 +12,7 @@ void* getRootTree()
     return &root;
 }
 
-void* getRoot()
+void getRoot()
 {
     return root;
 }
@@ -342,11 +342,6 @@ void purgeTree(void* start)      //supprime tout l'arbre genealogique en partant
 */
 
 
-int parseur(char* req, int len)
-{
-    return 0;
-}
-
 
 
 void printNode(void* node)
@@ -406,4 +401,114 @@ void _showRecursive(void* node, int count)
             _showRecursive(child, count + 1);
         }
     }
+}
+
+
+/*
+int parseur(char* req, int len) {
+    char* ptr = req;
+    char* end = req + len;
+
+    // Parse "debut"
+    if (strncmp(ptr, "start", 5) != 0) {
+        return 0;
+    }
+    ptr += 5;
+
+    // Parse 2*( mot ponct / nombre separateur ) [ponct]
+    for (int i = 0; i < 2; i++) {
+        // Parse mot
+        int mot_len = 0;
+        while (ptr < end && (isalpha(*ptr) || isdigit(*ptr))) 
+        {
+            ptr++;
+            mot_len++;
+        }
+        if (mot_len == 0) return 0;
+        // Parse separateur
+        if (ptr >= end || (*ptr != ' ' && *ptr != '\t' && *ptr != '-' && *ptr != '_'))
+            return 0;
+        ptr++;
+
+        // Parse ponct
+        while (ptr < end && (*ptr == ',' || *ptr == '.' || *ptr == '!' || *ptr == '?' || *ptr == ':'))
+            ptr++;
+
+        //if (ptr >= end || (!isdigit(*ptr) && (*ptr != ' ' && *ptr != '\t' && *ptr != '-' && *ptr != '_'))) {
+        //    return 0;
+        //}
+        if (isdigit(*ptr)) {
+            // Parse nombre
+            while (ptr < end && isdigit(*ptr)) {
+                ptr++;
+            }
+            if (ptr >= end || (*ptr != ' ' && *ptr != '\t' && *ptr != '-' && *ptr != '_')) {
+                return 0;
+            }
+        }
+        ptr++;
+    }
+
+    // Parse [ponct] fin LF
+    if (ptr < end && (*ptr == ',' || *ptr == '.' || *ptr == '!' || *ptr == '?' || *ptr == ':')) {
+        ptr++;
+    }
+    ptr--;
+    if (strncmp(ptr, "fin\n", 4) != 0) {
+        return 0;
+    }
+
+    return 1;
+}
+*/
+
+#define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
+#define IS_ALPHA(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
+#define IS_PONCT(c) ((c) == ',' || (c) == '.' || (c) == '!' || (c) == '?' || (c) == ':')
+#define IS_SEP(c) ((c) == ' ' || (c) == '\t' || (c) == '-' || (c) == '_')
+
+int parseur(char* req, int len) {
+    char* ptr = req;
+    char* end = req + len;
+
+    // Parse "debut"
+    if (strncmp(ptr, "start", 5) != 0)
+        return 0;
+    ptr += 5;
+
+    // Parse 2*( mot ponct / nombre separateur ) [ponct]
+    for (int i = 0; !((i > 2) && ((strncmp(ptr, "fin\n", 4) == 0) || IS_PONCT(*ptr))); i++)
+    {
+        if (ptr < end && IS_ALPHA(*ptr))
+        {
+            //cas mot ponct
+            while (ptr < end && IS_ALPHA(*ptr))
+                ptr++;
+
+            if (ptr >= end || !IS_SEP(*ptr))
+                return 0;
+            ptr++;
+
+            if (ptr >= end || !IS_PONCT(*ptr))
+                return 0;
+            ptr++;
+        }
+        else if (ptr < end && IS_DIGIT(*ptr))
+        {
+            while (ptr < end && IS_DIGIT(*ptr))
+                ptr++;
+
+            if (ptr >= end || !IS_SEP(*ptr))
+                return 0;
+            ptr++;
+        }
+        else return 0;
+
+
+    }
+
+    if (IS_PONCT(*ptr))
+        (strncmp(++ptr, "fin\n", 4) != 0);
+
+    return 1;
 }
