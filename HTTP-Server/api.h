@@ -24,13 +24,23 @@ typedef struct treeNode
 	struct treeNode* child;
 } _treeNode;
 
+
+typedef struct noeud {
+	struct noeud* pere;
+	char* tag;
+	char* value;
+	int taille;
+	int nombrefils;
+	struct noeud** fils;
+} noeud;
+
 // Fonction qui retourne un pointeur (type opaque) vers la racine de l'arbre construit. 
 void *getRootTree();
 
 void getRoot();
 
 // Fonction qui recherche dans l'arbre tous les noeuds dont l'etiquette est egale à la chaine de caractères en argument.   
-// Par convention si start == NULL alors on commence à la racine 
+// Par convention si start == NULL alors on commence à la racine
 // sinon on effectue une recherche dans le sous-arbre à partir du noeud start 
 _Token *searchTree(void *start,char *name);
 
@@ -47,6 +57,9 @@ void purgeElement(_Token **r);
 
 // Fonction qui supprime et libere toute la mémoire associée à l'arbre. 
 void purgeTree(void *root);
+
+// recursive purge in tree, util function for searchTree
+void _purgeRecursive(void* current);
 
 // L'appel à votre parser un char* et une longueur à parser.  
 int parseur(char *req, int len);
@@ -94,4 +107,4 @@ void showTree(void* start);
 
 
 //create and add node to _Token list and to the tree given the parent and the node datas
-void* toNode(char* tag, int rulenameID, char* start, int length, _treeNode** parent);
+void* addNode(char* tag, char* value, int taille, noeud** pere);

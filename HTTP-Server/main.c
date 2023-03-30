@@ -84,27 +84,37 @@ int main(int argc,char *argv[])
 }
 */
 
+
 int main()
 {
+	//noeud* root = calloc(1, sizeof(noeud));
 	//_treeNode* node = &(_treeNode){NULL, 0, NULL, 0, getRootTree(), NULL, NULL, NULL};
-/*
-	_treeNode* node = toNode("a", 0, NULL, 0, getRootTree());
-	printf("parent%p prev%p next%p child%p\n", node->parent, node->prevSib, node->nextSib, node->child);
+	noeud* parent = (noeud*)addNode("[1:header_field]", NULL, 0, getRootTree());
+	//printf("parent%p prev%p next%p child%p\n", parent->parent, parent->prevSib, parent->nextSib, parent->child);
 	
-	_treeNode* newNode = toNode("b", 0, NULL, 0, &node);
-	//addSibling(node->child, newNode);
-	printf("parent%p prev%p next%p child%p\n", newNode->parent, newNode->prevSib, newNode->nextSib, newNode->child);
+	noeud* child1 = (noeud*)addNode("[2:Connection_header]", NULL, 0, &parent);
+	//addSibling(parent->child, child);
+	//printf("parent%p prev%p next%p child%p\n", child->parent, child->prevSib, child->nextSib, child->child);
 
-	_treeNode* newNodeSib = toNode("c", 0, NULL, 0, &node);
-	_treeNode* newNodeChildOfSib = toNode("d", 0, NULL, 0, &newNodeSib);
+	noeud* child2 = (noeud*)addNode("[2:Accept_Encoding_header]", NULL, 0, &parent);
+	noeud* childOfChild2 = (noeud*)addNode("[3:case_insensitive_string]", NULL, 0, &child2);
+	noeud* child2OfChild2 = (noeud*)addNode("[1:header_field]", NULL, 0, &child2);
+
+
 	
 	//showTree(NULL);
 	//showToken(getRoot());
-	showTree(node);
-	deleteNode(getRootTree(), newNodeSib);
-	showTree(node);
-	*/
-	char* req = "startWS-?7-t_?fin\n";
-	int ret = parseur(req, strlen(req));
-	printf("val retour %d", ret);
+	showTree(parent);
+	//deleteNode(getRootTree(), childSib);
+	_Token* result = searchTree(parent, "[1:header_field]");
+	purgeTree(child2);
+	
+	showTree(parent);
+
+
+	//char* req = "startWS-?7-t_?fin\n";
+	//int ret = parseur(req, strlen(req));
+	//printf("val retour %d", ret);
+	//return ret;
+	return 0;
 }

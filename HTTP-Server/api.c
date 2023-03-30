@@ -2,56 +2,74 @@
 #include <stdio.h> 
 #include <string.h>
 #include <stdlib.h>
+#pragma warning(disable : 4996)
 
 
 static _Token* root = NULL;
-static char* rulenames[] = { "inter", "term" };
+static char* rulenames[] = { "rulename", "inter", };//"term" };
+
+static _Token* queue = NULL;
+
+static noeud* rootNoeud = NULL;
 
 void* getRootTree()
 {
     return &root;
 }
 
-void getRoot()
+void* getQueueTree()
 {
-    return root;
+    return &queue;
 }
 
-void* toNode(char* tag, int rulenameID, char* start, int length, _treeNode** parent)
+void* getRootNoeud()
 {
-    _treeNode* node = (_treeNode*)calloc(1, sizeof(_treeNode));
+    return &rootNoeud;
+}
+
+
+void* addNode(char* tag, char* value, int taille, noeud** pere)
+{
+    noeud* node = (noeud*)calloc(1, sizeof(noeud));
     if (node)
     {
         node->tag = tag;
-        node->rulenameID = rulenameID;
-        node->start = start;
-        node->length = length;
-        node->parent = *parent;
-        if (*parent)
+        node->value = value;
+        node->taille = taille;
+        node->nombrefils = 0;
+        //node->fils = calloc(0, sizeof(noeud*));
+        if (*pere)
         {
-            _treeNode* ptr = (*parent)->child;
-            if (ptr) {
-                while (ptr->nextSib != NULL)
-                    ptr = ptr->nextSib;    //look for last child   
-                node->prevSib = ptr;    //already one child before
-                ptr->nextSib = node;
+            node->pere = *pere;
+            (*pere)->nombrefils++;
+            (*pere)->fils = realloc((*pere)->fils, sizeof(noeud*) * (*pere)->nombrefils);
+            /*
+            noeud** filspere = malloc(sizeof(noeud*));
+            noeud** newfilspere = realloc(filspere, (*pere)->nombrefils);
+            if (newfilspere == NULL) // reallocated pointer ptr1
+            {
+                printf("Error S100: Problem during the realloc for adding a child\n");
+                free(filspere);
             }
-            else (*parent)->child = node; //and node->prevSib = NULL but already done by calloc
-            //node->nextSib = NULL; //done by calloc
-            //node->child = NULL;
+            else
+                filspere = newfilspere;           // the reallocation succeeded, we can overwrite our original pointer now
+            */
+            if((*pere)->fils)
+                (*pere)->fils[(*pere)->nombrefils - 1] = node;
         }
         else
         {
-            node->nextSib = NULL;
-            node->prevSib = NULL;
-            node->child = NULL;
+            _Token* rootN = getRootTree();
+            rootN->node = node;
         }
     }
     else
         printf("Error S100: Memory not allocated\n");
-    addToken(&root, node);
+    addToken(getRootTree(), node);
     return node;
 }
+
+
 
 void addToken(_Token** _tList, void* node) {
     _Token* newToken = (_Token*)calloc(1, sizeof(_Token));
@@ -62,13 +80,19 @@ void addToken(_Token** _tList, void* node) {
 
         if (*_tList == NULL)
             *_tList = newToken;
-        else 
+        else
         {
-            _Token* currToken = *_tList;
+            /*_Token* currToken = *_tList;
+            
             while (currToken->next != NULL)
                 currToken = currToken->next;
-
-            currToken->next = newToken;
+                */
+            
+            _Token** currToken = getQueueTree();
+            if (*currToken != NULL)
+                (*currToken)->next = newToken;
+            else
+                *currToken = newToken;
         }
     }
     else
@@ -77,18 +101,19 @@ void addToken(_Token** _tList, void* node) {
 
 
 
-void addSibling(_treeNode* _tSibList, _treeNode* node) 
+/*
+void addSibling(noeud* _tSibList, noeud* node)
 {
     addToken(root, node);
 
     if (_tSibList == NULL)
     {
         _tSibList = node;
-        node->parent->child = node; //says to parent 'hey i'm your child'
-    } 
+        node->pere->fils = node; //says to pere 'hey i'm your child'
+    }
     else
     {
-        _treeNode* currToken = _tSibList;
+        noeud* currToken = _tSibList;
         while (currToken->nextSib != NULL)
             currToken = currToken->nextSib;
 
@@ -96,12 +121,13 @@ void addSibling(_treeNode* _tSibList, _treeNode* node)
 
     }
 }
+*/
 
-
-void removeSibling(_treeNode** _tSibList, _treeNode* node) 
+/*
+void removeSibling(noeud** _tSibList, noeud* node)
 {
-    _treeNode* curr = *_tSibList;
-    _treeNode* prev = NULL;
+    noeud* curr = *_tSibList;
+    noeud* prev = NULL;
     while (curr->nextSib)
     {
         prev = curr;
@@ -111,27 +137,28 @@ void removeSibling(_treeNode** _tSibList, _treeNode* node)
         prev->nextSib = NULL;
     free(curr);
 }
+*/
 
-
-void deleteNode(_Token** _tList, _treeNode* node)
+/*
+void deleteNode(_Token** _tList, noeud* node)
 {
     _Token* curr = *_tList;
     _Token* prev = NULL;
 
-    if (curr != NULL && curr->node == node) 
+    if (curr != NULL && curr->node == node)
     {
         *_tList = curr->next;
         free(curr);
         return;
     }
-    else 
+    else
     {
         while (curr != NULL && curr->node != node) {
             prev = curr;
             curr = curr->next;
         }
 
-        if (curr == NULL) 
+        if (curr == NULL)
         {
             printf("Error S102: Node not found in Token list\n");
         }
@@ -141,19 +168,19 @@ void deleteNode(_Token** _tList, _treeNode* node)
 
             prev->next = curr->next;
             node->prevSib->nextSib = node->nextSib;
-            purgeTree(node);            //del under recursively all child under this parent
+            purgeTree(node);            //del under recursively all child under this pere
             //free(node);                //del node and del in token list
             free(curr);
         }
     }
 }
+*/
 
-
-
-_treeNode* searchSibling(_treeNode** _tSibList, char* typeofsearch, void* elemofsearch)
+/*
+noeud* searchSibling(noeud** _tSibList, char* typeofsearch, void* elemofsearch)
 {
     int found = 0, count = 0;
-    _treeNode* sibling = *_tSibList;
+    noeud* sibling = *_tSibList;
     if (strcmp(typeofsearch, "tag") == 0)
     {
         while (sibling->nextSib != NULL && !found)
@@ -185,7 +212,7 @@ _treeNode* searchSibling(_treeNode** _tSibList, char* typeofsearch, void* elemof
                 ptrElem++;
                 count++;
             }
-            if (count == sibling->length) found = 1;
+            if (count == sibling->taille) found = 1;
             else count = 0;
         }
     }
@@ -194,7 +221,7 @@ _treeNode* searchSibling(_treeNode** _tSibList, char* typeofsearch, void* elemof
 
     return found ? sibling : NULL;
 }
-
+*/
 
 
 /*
@@ -203,11 +230,11 @@ _Token* searchTree(void* start, char* name) {
     _tLFound->node = NULL;
     _tLFound->next = NULL;
 
-    _treeNode* startNode = NULL;
-    if (start == NULL) startNode = (_treeNode*)root->node;
-    else startNode = (_treeNode*)start;
+    noeud* startNode = NULL;
+    if (start == NULL) startNode = (noeud*)root->node;
+    else startNode = (noeud*)start;
 
-    if (strcmp(startNode->tag, name) == 0) 
+    if (strcmp(startNode->tag, name) == 0)
         _tLFound->node = startNode;
     //else recursiveSearch(startNode, name, _tLFound);       // TODO
 
@@ -224,39 +251,37 @@ _Token* searchTree(void* start, char* name) {
 
 _Token* searchTree(void* start, char* name) {
     _Token* result = NULL;
-    if (start == NULL) start = getRootTree();
+    if (start == NULL) start = (*(_Token**)(getRootTree()))->node;
     _searchRecursive(start, name, &result);
     return result;
 }
 
 // Recherche récursive dans l'arbre
-void _searchRecursive(void* node, char* name, _Token** result) 
+void _searchRecursive(void* node, char* name, _Token** result)
 {
     int len;
     char* tag = getElementTag(node, &len);
-    if (tag != NULL && len == strlen(name) && strncmp(tag, name, len) == 0) 
+    if (tag != NULL && len == strlen(name) && strncmp(tag, name, len) == 0)
     {
         _Token* token = (_Token*)malloc(sizeof(_Token));
-        if (token) 
+        if (token)
         {
             token->node = node;
             token->next = *result;
             *result = token;
         }
-
     }
-    for (void* child = ((_treeNode*)node)->child; child != NULL; child = ((_treeNode*)child)->nextSib) {
+
+    for (int i = 0; i < ((noeud*)node)->nombrefils; i++)
+        _searchRecursive(((noeud*)node)->fils[i], name, result);
+
+    /*
+    for (void* child = ((noeud*)node)->child; child != NULL; child = ((noeud*)child)->nextSib) {
         _searchRecursive(child, name, result);
     }
+    */
 }
 
-
-
-void* getFirstChild(void* node)
-{
-    _treeNode* first = (_treeNode*)node;
-    return first->parent->child;
-}
 
 
 
@@ -265,21 +290,39 @@ char* getElementTag(void* node, int* len)
     if (node == NULL)
         return NULL;
 
-    char* str = rulenames[((_treeNode*)node)->rulenameID];
-    *len = strlen(str);
+    noeud* n = ((noeud*)node);
+
+    char* str = (char*)malloc(strlen(n->tag));
+    if (str) 
+    {
+        strcpy(str, n->tag);
+        *len = strlen(str);
+    }
     return str;
 }
 
+char* getElementValue(void* node, int* len)
+{
+    if (node == NULL)
+        return NULL;
 
+    char* str = (char*)malloc(((noeud*)node)->taille);
+    if(str)
+        strcpy(str, ((noeud*)node)->value);
+    *len = ((noeud*)node)->taille;
+    return str;
+}
+
+/*
 char* getElementValue(void* node, int* len) //pour get la rulename
 {
     if (node == NULL)
         return NULL;
 
-    _treeNode* _tNode = (_treeNode*)node;
-    //char* str = copy_sub_str(_tNode->string, _tNode->start_string, _tNode->length_string);
+    noeud* _tNode = (noeud*)node;
+    //char* str = copy_sub_str(_tNode->string, _tNode->start_string, _tNode->taille_string);
     char* ptr = _tNode->start;
-    char* str = (char*)malloc((_tNode->length)*sizeof(char));
+    char* str = (char*)malloc((_tNode->taille) * sizeof(char));
     char* pstr = str;
     if (str)
     {
@@ -292,17 +335,17 @@ char* getElementValue(void* node, int* len) //pour get la rulename
         *pstr = '\0';
     }
 
-    *len = _tNode->length;
+    *len = _tNode->taille;
     return str;
 }
-
+*/
 
 void purgeElement(_Token** r) //supprime toute la liste chainée de _Token
 {
-    
+
     _Token* currToken = *r;
 
-    while (currToken != NULL) 
+    while (currToken != NULL)
     {
         _Token* tmp = currToken;
         currToken = currToken->next;
@@ -312,41 +355,122 @@ void purgeElement(_Token** r) //supprime toute la liste chainée de _Token
 }
 
 
-void purgeTree(void* start)      //supprime tout l'arbre genealogique en partant du parent root 
+
+void purgeTree(void* current)      //supprime tout l'arbre genealogique en partant du current 
 {
-    //root = (_treeNode*)root;
-    if (((_treeNode*)start)->child != NULL)
+    /*
+    //root = (noeud*)root;
+    if (((noeud*)start)->nombrefils != 0)
     {
-        purgeTree(((_treeNode*)start)->child);
+        purgeTree(*(((noeud*)start)->fils));
     }
-    _treeNode* tmp = (_treeNode*)start;
-    while (start != NULL)
+
+    int i = 0;
+    while (i != ((noeud*)start)->nombrefils)
     {
-        tmp = start;
-        start = ((_treeNode*)start)->nextSib;
-        free(tmp);
+        //free(tmp);
+        i++;
     }
     start = NULL;
-}
+    */
 
+    short found = 0;
+    noeud* currentNode = ((noeud*)current);
+    noeud* pere = currentNode->pere;
+    
+    if (currentNode == NULL) return;
+    while (currentNode->nombrefils > 0)
+        purgeTree(currentNode->fils[0]);
 
-/*
-    _Token* tmp = root;
-    while (root != NULL)
-    {
-        tmp = root;
-        root = ((_Token*)root)->next;
-        free(tmp);
+    if (currentNode->pere && currentNode->pere->nombrefils > 0) {
+        
+        noeud* pere = currentNode->pere;
+
+        int i = 0;
+        for (int ii = 0; i < pere->nombrefils && !found; ii++)
+        {
+            if (pere->fils[ii] == currentNode) 
+            {
+                found = 1;
+                i = ii;
+            }
+        }
+
+        free(pere->fils[i]);
+
+        for (int j = i; j < pere->nombrefils - 1; j++)
+            pere->fils[j] = pere->fils[j + 1];
+
+        pere->nombrefils--;
+        if (pere->nombrefils == 0) 
+        {
+            free(pere->fils);
+            pere->fils = NULL;
+        }
+        else
+            pere->fils = realloc(pere->fils, sizeof(noeud) * pere->nombrefils);
     }
-    root = NULL;
-*/
+    else 
+    {
+        if (currentNode == (*(_Token**)(getRootTree()))->node)
+            (*(_Token**)(getRootTree()))->node = NULL;
 
+        free(currentNode);
+    }
+}
+    /*
+    if (pere)
+    {
+        int i = 0;
+        for (int i = 0; i < pere->nombrefils && !found; i++)
+        {
+            if (pere->fils[i] == currentNode)
+                found = 1;
+        }
+        if (found)
+        {
+            pere->nombrefils--;
+            for (int j = i; j < pere->nombrefils; j++)
+                pere->fils[j] = pere->fils[j + 1];
+            pere->fils = realloc(pere->fils, sizeof(noeud*) * pere->nombrefils);
+        }
+        else
+            printf("Error S105: The node is not in his parent's child list, yet all child will be removed\n");
+    }
+    else
+    {
+        //_Token** r = getRootTree();
+        //if (start == NULL) start = (*r)->node;
+        printf("Error S105: No parent have been found for this node, yet all child will be removed\nDefault option: root set to NULL, can be modified later\n");
+    }
+        
 
+    _purgeRecursive(current);
+}
+    */
+
+void _purgeRecursive(void* current)
+{
+    noeud* currentNode = ((noeud*)current);
+    for (int i = 0; i < currentNode->nombrefils; i++)
+    {
+        if (currentNode->fils[i] != NULL)
+            _purgeRecursive(currentNode->fils[i]);
+    }
+    free(currentNode->fils);
+    free(currentNode);
+    currentNode = NULL;
+}
 
 
 void printNode(void* node)
 {
-    char* ptr = ((_treeNode*)node)->tag;
+    if(node)
+        printf("%s\n", ((noeud*)node)->tag);
+    else
+        printf("Error S105: NULL node\n");
+    /*
+    char* ptr = ((noeud*)node)->tag;
     if (ptr != NULL)
     {
         for (; *ptr != '\0' && ptr != NULL; ptr++)
@@ -355,15 +479,16 @@ void printNode(void* node)
     else printf("null");
 
     printf(" - ");
-    printf("%s", rulenames[((_treeNode*)node)->rulenameID]);
+    printf("%s", rulenames[((noeud*)node)->rulenameID]);
     printf(" - ");
-    if ((ptr = ((_treeNode*)node)->start) != NULL)
+    if ((ptr = ((noeud*)node)->start) != NULL)
     {
-        for (; ptr != &((_treeNode*)node)->start[((_treeNode*)node)->length]; ptr++)
-            printf("%c", *ptr);                              // <=> ptr != start[length]
+        for (; ptr != &((noeud*)node)->start[((noeud*)node)->taille]; ptr++)
+            printf("%c", *ptr);                              // <=> ptr != start[taille]
     }
     else printf("null");
     printf("\n");
+    */
 }
 
 void showToken(_Token* start)
@@ -382,7 +507,8 @@ void showToken(_Token* start)
 }
 
 void showTree(void* start) {
-    if (start == NULL) start = root->node;
+    //_Token** r = getRootTree();
+    //if (start == NULL) start = (*r)->node;
     printf("\n\n");
     printNode(start);
     _showRecursive(start, 1);
@@ -391,124 +517,19 @@ void showTree(void* start) {
 // recursive tree show
 void _showRecursive(void* node, int count)
 {
-    if (((_treeNode*)node)->child != NULL)
+
+    if (node)
     {
-        for (void* child = ((_treeNode*)node)->child; child != NULL; child = ((_treeNode*)child)->nextSib)
+        noeud* currentNode = ((noeud*)node);
+        if (currentNode->nombrefils > 0)
         {
-            for (int i = 0; i < count; i++)
-                printf("|    ");
-            printNode(child);
-            _showRecursive(child, count + 1);
-        }
-    }
-}
-
-
-/*
-int parseur(char* req, int len) {
-    char* ptr = req;
-    char* end = req + len;
-
-    // Parse "debut"
-    if (strncmp(ptr, "start", 5) != 0) {
-        return 0;
-    }
-    ptr += 5;
-
-    // Parse 2*( mot ponct / nombre separateur ) [ponct]
-    for (int i = 0; i < 2; i++) {
-        // Parse mot
-        int mot_len = 0;
-        while (ptr < end && (isalpha(*ptr) || isdigit(*ptr))) 
-        {
-            ptr++;
-            mot_len++;
-        }
-        if (mot_len == 0) return 0;
-        // Parse separateur
-        if (ptr >= end || (*ptr != ' ' && *ptr != '\t' && *ptr != '-' && *ptr != '_'))
-            return 0;
-        ptr++;
-
-        // Parse ponct
-        while (ptr < end && (*ptr == ',' || *ptr == '.' || *ptr == '!' || *ptr == '?' || *ptr == ':'))
-            ptr++;
-
-        //if (ptr >= end || (!isdigit(*ptr) && (*ptr != ' ' && *ptr != '\t' && *ptr != '-' && *ptr != '_'))) {
-        //    return 0;
-        //}
-        if (isdigit(*ptr)) {
-            // Parse nombre
-            while (ptr < end && isdigit(*ptr)) {
-                ptr++;
-            }
-            if (ptr >= end || (*ptr != ' ' && *ptr != '\t' && *ptr != '-' && *ptr != '_')) {
-                return 0;
+            for (int i = 0; i < currentNode->nombrefils; i++)
+            {
+                for (int j = 0; j < count; j++)
+                    printf("|    ");
+                printNode(currentNode->fils[i]);
+                _showRecursive(currentNode->fils[i], count + 1);
             }
         }
-        ptr++;
     }
-
-    // Parse [ponct] fin LF
-    if (ptr < end && (*ptr == ',' || *ptr == '.' || *ptr == '!' || *ptr == '?' || *ptr == ':')) {
-        ptr++;
-    }
-    ptr--;
-    if (strncmp(ptr, "fin\n", 4) != 0) {
-        return 0;
-    }
-
-    return 1;
-}
-*/
-
-#define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
-#define IS_ALPHA(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
-#define IS_PONCT(c) ((c) == ',' || (c) == '.' || (c) == '!' || (c) == '?' || (c) == ':')
-#define IS_SEP(c) ((c) == ' ' || (c) == '\t' || (c) == '-' || (c) == '_')
-
-int parseur(char* req, int len) {
-    char* ptr = req;
-    char* end = req + len;
-
-    // Parse "debut"
-    if (strncmp(ptr, "start", 5) != 0)
-        return 0;
-    ptr += 5;
-
-    // Parse 2*( mot ponct / nombre separateur ) [ponct]
-    for (int i = 0; !((i > 2) && ((strncmp(ptr, "fin\n", 4) == 0) || IS_PONCT(*ptr))); i++)
-    {
-        if (ptr < end && IS_ALPHA(*ptr))
-        {
-            //cas mot ponct
-            while (ptr < end && IS_ALPHA(*ptr))
-                ptr++;
-
-            if (ptr >= end || !IS_SEP(*ptr))
-                return 0;
-            ptr++;
-
-            if (ptr >= end || !IS_PONCT(*ptr))
-                return 0;
-            ptr++;
-        }
-        else if (ptr < end && IS_DIGIT(*ptr))
-        {
-            while (ptr < end && IS_DIGIT(*ptr))
-                ptr++;
-
-            if (ptr >= end || !IS_SEP(*ptr))
-                return 0;
-            ptr++;
-        }
-        else return 0;
-
-
-    }
-
-    if (IS_PONCT(*ptr))
-        (strncmp(++ptr, "fin\n", 4) != 0);
-
-    return 1;
 }
