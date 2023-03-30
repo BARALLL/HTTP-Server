@@ -6,7 +6,7 @@ typedef struct _token {
 		} _Token;
 
 
-
+/*
 //char* tag;
 //int rulenameID;	//might not be useful
 //char* start;		//value of rulename
@@ -23,7 +23,7 @@ typedef struct treeNode
 	struct treeNode* nextSib;
 	struct treeNode* child;
 } _treeNode;
-
+*/
 
 typedef struct noeud {
 	struct noeud* pere;
@@ -58,7 +58,7 @@ void purgeElement(_Token **r);
 // Fonction qui supprime et libere toute la mémoire associée à l'arbre. 
 void purgeTree(void *root);
 
-// recursive purge in tree, util function for searchTree
+// recursive purge in tree, util function for purgeTree
 void _purgeRecursive(void* current);
 
 // L'appel à votre parser un char* et une longueur à parser.  
@@ -78,19 +78,16 @@ void _searchRecursive(void* node, char* name, _Token** result);
 //Unused, replaced by toNode()
 //Add a sibling to node list. Make sure to add it to _Token List as well
 //can add child to node by giving node->child as _tSibList parameter
-void addSibling(_treeNode* _tSibList, _treeNode* node);
+//void addSibling(_treeNode* _tSibList, _treeNode* node);
 
 //Remove sibling from sibling node list and from _Token list. Remove recursively all child of node
-void deleteNode(_Token** _tList, _treeNode* node);
+//void deleteNode(_Token** _tList, _treeNode* node);
 
 //Unused
 //Remove sibling from sibling node list
-void removeSibling(_treeNode** _tSibList, _treeNode* node);
+//void removeSibling(_treeNode** _tSibList, _treeNode* node);
 
 
-//Unused
-//get the first sibling from anywhere in the sibling list
-void* getFirstChild(void* node);
 
 
 //util function to print a node

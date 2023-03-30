@@ -5,12 +5,14 @@
 #pragma warning(disable : 4996)
 
 
-static _Token* root = NULL;
-static char* rulenames[] = { "rulename", "inter", };//"term" };
+_Token* root = NULL;
+//static char* rulenames[] = { "rulename", "inter", };//"term" };
 
 static _Token* queue = NULL;
 
 static noeud* rootNoeud = NULL;
+
+
 
 void* getRootTree()
 {
@@ -59,8 +61,10 @@ void* addNode(char* tag, char* value, int taille, noeud** pere)
         }
         else
         {
-            _Token* rootN = getRootTree();
-            rootN->node = node;
+            _Token** r = getRootTree();
+            *r = calloc(1, sizeof(_Token*));
+            if(*r)
+                (*r)->node = node;
         }
     }
     else
@@ -88,11 +92,17 @@ void addToken(_Token** _tList, void* node) {
                 currToken = currToken->next;
                 */
             
-            _Token** currToken = getQueueTree();
-            if (*currToken != NULL)
-                (*currToken)->next = newToken;
+            _Token** queue = getQueueTree();
+            if (*queue != NULL)
+            {
+                //printf("%p %p %p\n", queue, (*queue), (*queue)->next);
+                (*queue)->next = newToken;
+                *queue = (*queue)->next;
+            }
             else
-                *currToken = newToken;
+                *queue = newToken;
+
+            //showToken(*_tList);
         }
     }
     else
@@ -340,6 +350,7 @@ char* getElementValue(void* node, int* len) //pour get la rulename
 }
 */
 
+
 void purgeElement(_Token** r) //supprime toute la liste chainée de _Token
 {
 
@@ -449,6 +460,7 @@ void purgeTree(void* current)      //supprime tout l'arbre genealogique en parta
 }
     */
 
+
 void _purgeRecursive(void* current)
 {
     noeud* currentNode = ((noeud*)current);
@@ -493,8 +505,9 @@ void printNode(void* node)
 
 void showToken(_Token* start)
 {
-    if (start->next != NULL)
+    if (start)
     {
+        printf("\n\n");
         _Token* ptr = start;
         while (ptr->next)
         {
@@ -502,13 +515,13 @@ void showToken(_Token* start)
             //printf("%p", ptr);
             ptr = ptr->next;
         }
-
     }
+    else
+        showToken((*(_Token**)(getRootTree())));
 }
 
 void showTree(void* start) {
-    //_Token** r = getRootTree();
-    //if (start == NULL) start = (*r)->node;
+    if (start == NULL) start = (*(_Token**)(getRootTree()))->node;
     printf("\n\n");
     printNode(start);
     _showRecursive(start, 1);
@@ -517,7 +530,6 @@ void showTree(void* start) {
 // recursive tree show
 void _showRecursive(void* node, int count)
 {
-
     if (node)
     {
         noeud* currentNode = ((noeud*)node);
@@ -532,4 +544,10 @@ void _showRecursive(void* node, int count)
             }
         }
     }
+}
+
+int parseur(char* req, int len)
+{
+    noeud* racine = malloc(sizeof(noeud));
+    parseur(req, len, racine);
 }
