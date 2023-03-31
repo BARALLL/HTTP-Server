@@ -1,23 +1,14 @@
 // defini un type pour la liste chainee renvoyée en réponse de la requete de recherche dans l'arbre. 
-#ifndef FILE1_H_
-#define FILE1_H_
+#ifndef UTILS_H
+#define UTILS_H
 #include "utils.h"
 #endif
 
-typedef struct _token {
-		void *node;  		// node type opaque pointant vers un noeud de votre structure de données. 
-		struct _token *next; 	// next pointe vers le prochain token.
-		} _Token;
+#ifndef GLOBAL_H
+#define GLOBAL_H
+#include "global.h"
+#endif
 
-
-typedef struct noeud {
-	struct noeud* pere;
-	char* tag;
-	char* value;
-	int taille;
-	int nombrefils;
-	struct noeud** fils;
-} noeud;
 
 // Fonction qui retourne un pointeur (type opaque) vers la racine de l'arbre construit. 
 void *getRootTree();

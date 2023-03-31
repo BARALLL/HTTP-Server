@@ -1,8 +1,13 @@
 #pragma once
 
-#ifndef FILE2_H_
-#define FILE2_H_
+#ifndef API_H
+#define API_H
 #include "api.h"
+#endif
+
+#ifndef GLOBAL_H
+#define GLOBAL_H
+#include "global.h"
 #endif
 
 //get queue pointer of _Token linked list

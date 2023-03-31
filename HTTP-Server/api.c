@@ -1,5 +1,4 @@
 #include "api.h"
-#include "utils.h"
 #include <stdio.h> 
 #include <string.h>
 #include <stdlib.h>
@@ -20,6 +19,7 @@ _Token* searchTree(void* start, char* name) {
     _Token* result = NULL;
     if (start == NULL) start = (*(_Token**)(getRootTree()))->node;
     _searchRecursive(start, name, &result);
+    showToken(result);
     return result;
 }
 
@@ -124,5 +124,5 @@ void purgeTree(void* current)      //supprime tout l'arbre genealogique en parta
 int parseur(char* req, int len)
 {
     noeud* racine = malloc(sizeof(noeud));
-    _parseur(req, len, racine);
+    return parseur(req, len, racine);
 }
