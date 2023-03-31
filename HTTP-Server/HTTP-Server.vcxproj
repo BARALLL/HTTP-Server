@@ -143,6 +143,7 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="mman.c" />
     <ClCompile Include="parseur.c" />
+    <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="example.txt" />
@@ -150,6 +151,7 @@
   <ItemGroup>
     <ClInclude Include="api.h" />
     <ClInclude Include="mman.h" />
+    <ClInclude Include="utils.h" />
     <ClInclude Include="winunistd.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
