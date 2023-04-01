@@ -26,29 +26,34 @@ void* addNode(char* tag, char* value, int taille, noeud** pere)
         node->taille = taille;
         node->nombrefils = 0;
         //node->fils = calloc(0, sizeof(noeud*));
-        if (*pere)
-        {
-            node->pere = *pere;
-            (*pere)->nombrefils++;
-            (*pere)->fils = realloc((*pere)->fils, sizeof(noeud*) * (*pere)->nombrefils);
-
-            if ((*pere)->fils)
-                (*pere)->fils[(*pere)->nombrefils - 1] = node;
-        }
-        else
-        {
-            _Token** r = getRootTree();
-            *r = calloc(1, sizeof(_Token*));
-            if (*r)
-                (*r)->node = node;
-        }
+        insertNode(node, pere);
     }
     else
         printf("Error S100: Memory not allocated\n");
-    addToken(getRootTree(), node);
     return node;
 }
 
+
+void insertNode(noeud* node, noeud** pere)
+{
+    if (*pere)
+    {
+        node->pere = *pere;
+        (*pere)->nombrefils++;
+        (*pere)->fils = realloc((*pere)->fils, sizeof(noeud*) * (*pere)->nombrefils);
+
+        if ((*pere)->fils)
+            (*pere)->fils[(*pere)->nombrefils - 1] = node;
+    }
+    else
+    {
+        _Token** r = getRootTree();
+        *r = calloc(1, sizeof(_Token*));
+        if (*r)
+            (*r)->node = node;
+    }
+    addToken(getRootTree(), node);
+}
 
 
 void addToken(_Token** _tList, void* node) {

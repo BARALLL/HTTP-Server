@@ -16,6 +16,9 @@ void* getQueueTree();
 //create and add node to _Token list and to the tree given the parent and the node datas
 void* addNode(char* tag, char* value, int taille, noeud** pere);
 
+//insert node in tree and link it to parent
+void insertNode(noeud* node, noeud** pere);
+
 //add token to list of _Token
 void addToken(_Token** _tList, void* node);
 
