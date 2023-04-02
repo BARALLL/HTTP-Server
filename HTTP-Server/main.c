@@ -33,7 +33,7 @@
 #define true 1 
 #define false 0 
 
-/*
+
 int main(int argc,char *argv[])
 {
 	int res,fi;
@@ -82,14 +82,13 @@ int main(int argc,char *argv[])
 	_close(fi);
 	return(res); 
 }
-*/
 
 
-int main()
+//old main used to test utils.c
+int testUtils()
 {
 	//noeud* root = calloc(1, sizeof(noeud));
 	//_treeNode* node = &(_treeNode){NULL, 0, NULL, 0, getRootTree(), NULL, NULL, NULL};
-
 
 	noeud* parent = (noeud*)addNode("[1:header_field]", NULL, 0, getRootTree());
 	//printf("parent%p prev%p next%p child%p\n", parent->parent, parent->prevSib, parent->nextSib, parent->child);
@@ -116,7 +115,6 @@ int main()
 	showTree(parent);
 	
 	//showToken(getRootTree());
-
 
 	//char* req = "startWS-?7-t_?fin\n";
 	//int ret = parseur(req, strlen(req));

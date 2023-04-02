@@ -4,7 +4,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
 #ifdef _WIN32
 /*
 * Special thanks to klauspost for their windows version of the mman library
@@ -18,35 +17,36 @@
 */
 #include "winunistd.h"
 #endif
-
 #ifdef __linux__ 
 #include <unistd.h>
 #include <sys/mman.h>
 #endif
+
 #include <fcntl.h>
 #include <errno.h>
-#pragma warning(disable : 4996)
+
 
 #define false 0
 
+char* alpha = "azertyyuiopqsdfghjklmwxcvbnAZERTYUIOPMLKJHGFDSQWXCVBN";
+char* num = "1234567890";
+char* tchar = "!!/#$%&(\");\n\\\r[] 	@:'=,*+-.^_`|~azertyyuiopqsdfghjklmwxcvbnAZERTYUIOPMLKJHGFDSQWXCVBN1234567890";
 typedef struct noeud {
-	struct noeud *pere;
+		struct noeud *pere;
     char *tag;
-	char *value;
+		char *value;
     int taille;
     int nombrefils;
     struct noeud **fils;
   } noeud;
 
 //Pour printf le champ tag ou value d'un fils : (**((*racine).fils+i)).value
-/*
+
 int parseur(char* addr,int taille, noeud* racine){
+
   int index = 0;
   if((*racine).pere==NULL){
       (*racine).tag = "[0:HTTP_message]";
-      for (int i = 0; *(addr+i)!= ' ' && *(addr+i)!='\n' && *(addr+i)!='\r' && *(addr+i)!='\0'; i++) {
-        index++;
-      }
       (*racine).value = addr;
       (*racine).taille = taille;
 			printf("[0:HTTP_message] = %c%c%c%c..%c%c%c%c\n",'"',*(addr),*(addr+1),*(addr+2),*(addr+(*racine).taille-3),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),'"' );
@@ -73,7 +73,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**(*racine).fils).taille=index;
 		(**(*racine).fils).value=addr;
 		int index2;
-    for(int numeroenfant=1;index<taille;numeroenfant++){
+    for(int numeroenfant=1;index<taille&&numeroenfant<nombreenfant;numeroenfant++){
       if(*(addr+index)!='\r'){
 				for(index2=0;*(addr+index+index2)!= '\r' && *(addr+index+index2+1)!='\n';index2++)
 				(**((*racine).fils+numeroenfant)).tag="[1:header_field]";
@@ -115,7 +115,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).pere=racine;
 		(**((*racine).fils)).value = addr;
 		(**((*racine).fils)).taille = (*racine).taille;
-		(**((*racine).fils)).tag="[2:Rien]";
+		(**((*racine).fils)).tag="[2:field_name]";
 		if(strncmp((*racine).value,"Host:",sizeof("Host:")-1)==0){
 			(**((*racine).fils)).tag = "[2:Host_header]";
 		}
@@ -137,9 +137,18 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[2:Host_header]")==0){
 		printf("        %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-3+(*racine).taille),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),'"' );
-		(*racine).fils = malloc(sizeof(noeud*)*4);
-		(*racine).nombrefils = 4;
+		int nombreenfant=0;
 		int index = 0;
+		int index2=0;
+		while(*(addr+index)!=':')index++;
+		nombreenfant+=2;
+		index++;
+		if(*(addr+index)==' ')nombreenfant+=2;
+		else	nombreenfant++;
+		(*racine).fils = malloc(sizeof(noeud*)*nombreenfant);
+		(*racine).nombrefils = nombreenfant;
+		index = 0;
+		index2=0;
 		for(index;*(addr+index)!= ':';index++)
 		*((*racine).fils)=malloc(sizeof(noeud));
 		(**((*racine).fils)).pere=racine;
@@ -152,22 +161,35 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils+1)).taille=1;
 		(**((*racine).fils+1)).tag="[3:case_insensitive_string]";
 		index++;
-		*((*racine).fils+2)=malloc(sizeof(noeud));
-		(**((*racine).fils+2)).pere=racine;
-		(**((*racine).fils+2)).tag="[3:OWS]";
-		(**((*racine).fils+2)).taille=1;
-		(**((*racine).fils+2)).value=addr+index;
-		index++;
-		*((*racine).fils+3)=malloc(sizeof(noeud));
-		(**((*racine).fils+3)).pere=racine;
-		(**((*racine).fils+3)).tag="[3:Host]";
-		(**((*racine).fils+3)).value = addr + index;
+		if(*(addr+index)==' '){
+			*((*racine).fils+2)=malloc(sizeof(noeud));
+			(**((*racine).fils+2)).pere=racine;
+			(**((*racine).fils+2)).tag="[3:OWS]";
+			while(*(addr+index+index2)==' ')index2++;
+			(**((*racine).fils+2)).taille=index2-1;
+			(**((*racine).fils+2)).value=addr+index;
+			index=index+index2;
+		}
+		*((*racine).fils+nombreenfant-1)=malloc(sizeof(noeud));
+		(**((*racine).fils+nombreenfant-1)).pere=racine;
+		(**((*racine).fils+nombreenfant-1)).tag="[3:Host]";
+		(**((*racine).fils+nombreenfant-1)).value = addr + index;
 		for(int index2=0;*(addr+index+index2)!='\r';index2++)
-		(**((*racine).fils+3)).taille = index2;
+		(**((*racine).fils+nombreenfant-1)).taille = index2;
 		for(int i = 0; i <(*racine).nombrefils;i++){
 			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 
+	}
+	if(strcmp((*racine).tag,"[2:field_name]")==0){
+		printf("        %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-3+(*racine).taille),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),'"' );
+		(*racine).fils = malloc(sizeof(noeud*));
+		*((*racine).fils)=malloc(sizeof(noeud));
+		(**(*racine).fils).pere=racine;
+		(**(*racine).fils).tag="[3:token]";
+		(**(*racine).fils).value=(*racine).value;
+		(**(*racine).fils).taille=(*racine).taille;
+		parseur((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[2:User_Agent_header]")==0){
 		printf("        %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),*(addr+(*racine).taille),'"' );
@@ -186,23 +208,31 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils+1)).taille=1;
 		(**((*racine).fils+1)).tag="[3:case_insensitive_string]";
 		index++;
-		*((*racine).fils+2)=malloc(sizeof(noeud));
-		(**((*racine).fils+2)).pere=racine;
-		(**((*racine).fils+2)).tag="[3:OWS]";
-		(**((*racine).fils+2)).taille=1;
-		(**((*racine).fils+2)).value=addr+index;
-		index++;
-		*((*racine).fils+3)=malloc(sizeof(noeud));
-		(**((*racine).fils+3)).pere=racine;
-		(**((*racine).fils+3)).tag="[3:User_Agent]";
-		(**((*racine).fils+3)).value = addr + index;
+		if(*(addr+index)==' '||*(addr+index)=='	'){
+			*((*racine).fils+2)=malloc(sizeof(noeud));
+			(**((*racine).fils+2)).pere=racine;
+			(**((*racine).fils+2)).tag="[3:OWS]";
+			(**((*racine).fils+2)).taille=1;
+			(**((*racine).fils+2)).value=addr+index;
+			while(*(addr+index)==' '||*(addr+index)=='	')index++;
+		}
+		else{
+			(*racine).nombrefils = 4;
+		}
+		*((*racine).fils+(*racine).nombrefils-2)=malloc(sizeof(noeud));
+		(**((*racine).fils+(*racine).nombrefils-2)).pere=racine;
+		(**((*racine).fils+(*racine).nombrefils-2)).tag="[3:User_Agent]";
+		(**((*racine).fils+(*racine).nombrefils-2)).value = addr + index;
 		for(int index2=0;*(addr+index+index2)!='\r';index2++)
-		(**((*racine).fils+3)).taille = index2-1;
-		*((*racine).fils+4)=malloc(sizeof(noeud));
-		(**((*racine).fils+4)).pere=racine;
-		(**((*racine).fils+4)).tag="[3:OWS]";
-		(**((*racine).fils+4)).taille=1;
-		(**((*racine).fils+4)).value=addr+index-1;
+		(**((*racine).fils+(*racine).nombrefils-2)).taille = index2-1;
+		if(*(addr+index-1) == ' ' || *(addr+index-1)== '	'){
+			*((*racine).fils+(*racine).nombrefils-1)=malloc(sizeof(noeud));
+			(**((*racine).fils+(*racine).nombrefils-1)).pere=racine;
+			(**((*racine).fils+(*racine).nombrefils-1)).tag="[3:OWS]";
+			(**((*racine).fils+(*racine).nombrefils-1)).taille=1;
+			(**((*racine).fils+(*racine).nombrefils-1)).value=addr+index-1;
+		}
+		else{(*racine).nombrefils--;}
 		for(int i = 0; i <(*racine).nombrefils;i++){
 			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
@@ -336,22 +366,26 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils+1)).taille=1;
 		(**((*racine).fils+1)).tag="[3:case_insensitive_string]";
 		index++;
-		*((*racine).fils+2)=malloc(sizeof(noeud));
-		(**((*racine).fils+2)).pere=racine;
-		(**((*racine).fils+2)).tag="[3:OWS]";
-		(**((*racine).fils+2)).taille=1;
-		(**((*racine).fils+2)).value=addr+index;
-		for (int i = 0; *(addr+index+i) == '	' || *(addr+index+i) == ' ' ; i++)
-		{
-			(**((*racine).fils+2)).taille=i+1;
+		if(*(addr+index)==' ' || *(addr+index)=='	'){
+			*((*racine).fils+2)=malloc(sizeof(noeud));
+			(**((*racine).fils+2)).pere=racine;
+			(**((*racine).fils+2)).tag="[3:OWS]";
+			(**((*racine).fils+2)).taille=1;
+			(**((*racine).fils+2)).value=addr+index;
+			for (int i = 0; *(addr+index+i) == '	' || *(addr+index+i) == ' ' ; i++){
+				(**((*racine).fils+2)).taille=i+1;
+			}
+			index=index+(**((*racine).fils+2)).taille;
 		}
-		index=index+(**((*racine).fils+2)).taille;
-		*((*racine).fils+3)=malloc(sizeof(noeud));
-		(**((*racine).fils+3)).pere=racine;
-		(**((*racine).fils+3)).tag="[3:Connection]";
-		(**((*racine).fils+3)).value = addr + index;
+		else{
+			(*racine).nombrefils = 3;
+		}
+		*((*racine).fils+(*racine).nombrefils-1)=malloc(sizeof(noeud));
+		(**((*racine).fils+(*racine).nombrefils-1)).pere=racine;
+		(**((*racine).fils+(*racine).nombrefils-1)).tag="[3:Connection]";
+		(**((*racine).fils+(*racine).nombrefils-1)).value = addr + index;
 		for(int index2=0;*(addr+index+index2)!='\r';index2++)
-		(**((*racine).fils+3)).taille = index2;
+		(**((*racine).fils+(*racine).nombrefils-1)).taille = index2;
 		for(int i = 0; i <(*racine).nombrefils;i++){
 			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
@@ -639,21 +673,60 @@ int parseur(char* addr,int taille, noeud* racine){
 
 	}
 	if(strcmp((*racine).tag,"[3:Accept_Encoding]")==0){
-		(*racine).nombrefils=2;
+		printf("            %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),*(addr+(*racine).taille),'"' );
 		int index=0;
-		(*racine).fils=malloc(sizeof(noeud*)*2);
-		*((*racine).fils)= malloc(sizeof(noeud));
-		*((*racine).fils+1)= malloc(sizeof(noeud));
-		(**((*racine).fils)).value=addr;
-		(**((*racine).fils)).pere=racine;
-		(**((*racine).fils)).tag="[4:codings]";
-		for(index = 0;*(addr+index)!=' '&&*(addr+index)!='	';index++)
-		(**((*racine).fils)).taille=index;
-		(**((*racine).fils+1)).value=addr+index;
-		(**((*racine).fils+1)).tag="[4:weight]";
-		(**((*racine).fils+1)).pere=racine;
-		(**((*racine).fils+1)).taille=taille-index;
-		for(int i =0;i<2;i++){
+		int nombreenfant=1;
+		for (int i = 0; i < taille; i++) {
+			if(*(addr+i)==' '||*(addr+i)==','){
+				if(*(addr+i)==' '){
+					nombreenfant++;
+					while(*(addr+i)==' '&&i<taille+1)i++;
+					if(*(addr+i)==';'){
+						while(*(addr+i)<'0'|| *(addr+i)>'9')i++;
+						while(*(addr+i)!=' '&&i<taille+1)i++;
+					}
+				}
+				else nombreenfant+=2;
+			}
+		}
+		int index2=0;
+		(*racine).nombrefils=nombreenfant;
+		(*racine).fils=malloc(sizeof(noeud*)*nombreenfant);
+		for(int i =0;i<nombreenfant;i++){
+			index2=0;
+			*((*racine).fils+i)=malloc(sizeof(noeud));
+			(**((*racine).fils+i)).value=addr+index;
+			(**((*racine).fils+i)).pere=racine;
+			if(*(addr+index+index2)==' '){
+				(**((*racine).fils+i)).tag="[4:OWS]";
+				while(*(addr+index+index2)==' ')index2++;
+				if(*(addr+index+index2)==';'){
+					(**((*racine).fils+i)).tag="[4:weight]";
+					while(*(addr+index+index2)<'0'|| *(addr+index+index2)>'9')index2++;
+					while(*(addr+index+index2)!=' '&&index+index2<taille+1)index2++;
+				}
+				(**((*racine).fils+i)).taille=index2-1;
+			}
+			else{
+				if(*(addr+index+index2)==','){
+					(**((*racine).fils+i)).tag="[4:case_insensitive_string]";
+					(**((*racine).fils+i)).taille=1;
+					index2++;
+				}
+				else{
+					if (*(addr+index+index2)!=',' &&*(addr+index+index2)!=' ' ) {
+						(**((*racine).fils+i)).tag="[4:codings]";
+						while (*(addr+index+index2)!=','&&*(addr+index+index2)!=' '&&index+index2<taille+1) {
+							index2++;
+						}
+						(**((*racine).fils+i)).taille=index2-1;
+					}
+				}
+			}
+			index=index+index2;
+		}
+
+		for(int i =0;i<nombreenfant;i++){
 			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
@@ -728,6 +801,23 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).pere = racine;
 		parseur((*racine).value,(*racine).taille,*((*racine).fils));
 	}
+	if(strcmp((*racine).tag,"[3:token]")==0){
+		printf("            %s = %c",(*racine).tag,'"');
+		for (int i = 0; i <= (*racine).taille; i++) {
+			printf("%c",*(addr+i) );
+		}
+		printf("%c\n",'"' );
+		(*racine).fils=malloc(sizeof(noeud*)*(*racine).taille);
+		for(int i=0;i<=(*racine).taille;i++){
+			*((*racine).fils+i)=malloc(sizeof(noeud));
+			(**((*racine).fils+i)).tag="[4:tchar]";
+			(**((*racine).fils+i)).value=addr+i;
+			(**((*racine).fils+i)).taille=1;
+			(**((*racine).fils+i)).pere=racine;
+			if(parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
+
+		}
+	}
 	if(strcmp((*racine).tag,"[4:uri_host]")==0){
 		printf("                %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),*(addr+(*racine).taille),'"' );
 		(*racine).nombrefils = 1;
@@ -757,7 +847,6 @@ int parseur(char* addr,int taille, noeud* racine){
 	if(strcmp((*racine).tag,"[4:__sp]")==0){
 		printf("                %s = %c%c%c\n",(*racine).tag,'"',*addr,'"');
 		if(*addr != ' '){
-			printf("%d %d\n",*addr,' ' );
 			printf("Erreur format __sp\n" );
 			return(0);
 		}
@@ -781,8 +870,24 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).pere = racine;
 		parseur((*racine).value,(*racine).taille,*((*racine).fils));
 	}
+	if(strcmp((*racine).tag,"[4:tchar]")==0){
+		printf("                %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
+		(*racine).fils=malloc(sizeof(noeud*)*(*racine).taille);
+		*((*racine).fils)=malloc(sizeof(noeud));
+		(**((*racine).fils)).tag="[5:case_insensitive_string]";
+		if(strchr(alpha, *addr)!=NULL)(**((*racine).fils)).tag="[5:__alpha]";
+		if(strchr(num, *addr)!=NULL)(**((*racine).fils)).tag="[5:__num]";
+		(**((*racine).fils)).value=addr;
+		(**((*racine).fils)).taille=1;
+		(**((*racine).fils)).pere=racine;
+		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+	}
 	if(strcmp((*racine).tag,"[4:codings]")==0){
-		printf("                %s = %c%c%c\n",(*racine).tag,'"',*addr,'"');
+		printf("                %s = %c",(*racine).tag,'"');
+		for (int i = 0; i <= (*racine).taille; i++) {
+			printf("%c",*(addr+i) );
+		}
+		printf("%c\n",'"' );
 		(*racine).nombrefils = 1;
 		(*racine).fils=malloc(sizeof(noeud*));
 		*((*racine).fils)=malloc(sizeof(noeud));
@@ -966,14 +1071,14 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[4:__digit]")==0){
 		printf("                %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*(addr)<'0'||*(addr)>'9'){
-			printf("Erreur format case_insensitive_string\n" );
+		if(strchr(num, *addr)==NULL){
+			printf("Erreur format __digit\n" );
 			return(0);
 		}
 	}
 	if(strcmp((*racine).tag,"[4:case_insensitive_string]")==0){
 		printf("                %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*(addr)!='/'&&*(addr)!='.'&&*addr!=','){
+		if(strchr(tchar, *addr)==NULL){
 			printf("Erreur format case_insensitive_string\n" );
 			return(0);
 		}
@@ -1083,7 +1188,11 @@ int parseur(char* addr,int taille, noeud* racine){
 		}
 	}
 	if(strcmp((*racine).tag,"[5:content_codings]")==0){
-		printf("                    %s = %c%c%c\n",(*racine).tag,'"',*addr,'"');
+		printf("                %s = %c",(*racine).tag,'"');
+		for (int i = 0; i <= (*racine).taille; i++) {
+			printf("%c",*(addr+i) );
+		}
+		printf("%c\n",'"' );
 		(*racine).nombrefils = 1;
 		(*racine).fils=malloc(sizeof(noeud*));
 		*((*racine).fils)=malloc(sizeof(noeud));
@@ -1095,7 +1204,7 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[5:__alpha]")==0){
 		printf("                    %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*addr >= 'a' && *addr <= 'z'){
+		if(strchr(alpha, *addr)!=NULL){
 			return(1);
 		}
 		else{
@@ -1218,10 +1327,6 @@ int parseur(char* addr,int taille, noeud* racine){
 			printf("%c",*(addr+i) );
 		}
 			printf("%c\n",'"' );}//print
-		if(*addr!='H' || *(addr+1)!= 'T' || *(addr+2)!='T' || *(addr+3)!='P'){
-			printf("Erreur format __num\n" );
-			return(0);
-		}
 	}
 	if(strcmp((*racine).tag,"[5:qvalue]")==0){
 		printf("                    %s = %c",(*racine).tag,'"');
@@ -1244,17 +1349,14 @@ int parseur(char* addr,int taille, noeud* racine){
 	if(strcmp((*racine).tag,"[5:case_insensitive_string]")==0){
 		if(taille==1){
 			printf("                    %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-			if(*(addr)!='/' && *(addr)!='(' && *(addr)!=')'&& *addr!=';'&& *addr!='*'&& *addr!='/'&& *addr!=','&&*addr!='-'){
-			printf("Erreur format case_insensitive_string\n" );
+			if(strchr(tchar, *addr)==NULL){
+				printf("Erreur format case_insensitive_string\n" );
 			return(0);
 			}
 		}
 		else{
 			printf("                    %s = %c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),'"' );
-			if((*(addr)!='q' || *(addr+1)!='=' )&&( *(addr)!='*' || *(addr+1)!='/')){
-			printf("Erreur format case_insensitive_string\n" );
-			return(0);
-			}
+			return(1);
 		}
 	}
 	if(strcmp((*racine).tag,"[5:tchar]")==0){
@@ -1262,6 +1364,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(*racine).fils=malloc(sizeof(noeud*)*(*racine).taille);
 		*((*racine).fils)=malloc(sizeof(noeud));
 		(**((*racine).fils)).tag="[6:__alpha]";
+		if(strchr(tchar, *addr)!=NULL)(**((*racine).fils)).tag="[6:case_insensitive_string]";
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
@@ -1332,7 +1435,7 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[6:case_insensitive_string]")==0){
 		printf("                        %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*(addr)!='/'&&*(addr)!='='&&*addr!='.'){
+		if(strchr(tchar, *addr)==NULL){
 			printf("Erreur format case_insensitive_string\n" );
 			return(0);
 		}
@@ -1347,7 +1450,6 @@ int parseur(char* addr,int taille, noeud* racine){
 	if(strcmp((*racine).tag,"[6:__htab]")==0){
 		printf("                        %s = %c%c%c\n",(*racine).tag,'"',*addr,'"');
 		if(*addr != '	'){
-			printf("%d %d\n",*addr,' ' );
 			printf("Erreur format __htab\n" );
 			return(0);
 		}
@@ -1356,8 +1458,8 @@ int parseur(char* addr,int taille, noeud* racine){
 		printf("                        %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
 		(*racine).fils=malloc(sizeof(noeud*)*(*racine).taille);
 		*((*racine).fils)=malloc(sizeof(noeud));
-		(**((*racine).fils)).tag="[7:__alpha]";
-		if(*addr=='-')(**((*racine).fils)).tag="[7:case_insensitive_string]";
+		(**((*racine).fils)).tag="[7:case_insensitive_string]";
+		if(strchr(alpha, *addr) !=NULL)(**((*racine).fils)).tag="[7:__alpha]";
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
@@ -1383,8 +1485,10 @@ int parseur(char* addr,int taille, noeud* racine){
 	if(strcmp((*racine).tag,"[6:reg_name]")==0){
 		printf("                        %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),*(addr+(*racine).taille),'"' );
 		(*racine).nombrefils=taille;
+		int n =0;
+		while(*(addr+n)== ' ' || *(addr+n)=='	')n++;
 		(*racine).fils=malloc(sizeof(noeud*)*taille);
-		for (int i = 0; i <= taille; i++) {
+		for (int i = n; i <= taille; i++) {
 			*((*racine).fils+i)=malloc(sizeof(noeud));
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
@@ -1395,7 +1499,7 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[6:__digit]")==0){
 		printf("                        %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*addr >= '0' && *addr <= '9'){
+		if(strchr(num, *addr)!=NULL){
 			return(1);
 		}
 		else{
@@ -1405,7 +1509,7 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[6:__alpha]")==0){
 		printf("                        %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*addr >= 'A' && *addr <= 'Z'){
+		if(strchr(alpha, *addr)!=NULL){
 			return(1);
 		}
 		else{
@@ -1415,13 +1519,16 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[6:__range]")==0){
 		printf("                        %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*addr >= 'A' && *addr <= 'Z'||*addr >= 'a' && *addr <= 'z' || *addr == ';' ||*addr == '_'||*addr==':' || *addr=='"' || *addr >= '0' && *addr <= '9' || *addr == '.'|| *addr=='-'){
+		if(strchr(tchar, *addr)!=NULL){
 			return(1);
 		}
 		else{
-			printf("Erreur format __range\n" );
-			return(0);
+			if(*addr == 34)return(1);
+			else{
+				printf("Erreur format __range\n" );
+				return(0);
 		 }
+	 }
 	}
 	if(strcmp((*racine).tag,"[7:tchar]")==0){
 		printf("                            %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
@@ -1429,7 +1536,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		*((*racine).fils)=malloc(sizeof(noeud));
 		(**((*racine).fils)).tag="[8:__digit]";
 		if(*(addr)=='.' || *(addr)=='+'||*addr == '*')(**((*racine).fils)).tag="[8:case_insensitive_string]";
-		if(*addr >= 'a' && *addr <= 'z')(**((*racine).fils)).tag="[8:__alpha]";
+		if(*addr >= 'a' && *addr <= 'z'|| *addr>='A' && *addr<='Z')(**((*racine).fils)).tag="[8:__alpha]";
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
@@ -1437,7 +1544,7 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[7:__alpha]")==0){
 		printf("                            %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*addr >= 'A' && *addr <= 'Z' || *addr >= 'a' && *addr <= 'z' ){
+		if(strchr(alpha, *addr)!=NULL){
 			return(1);
 		}
 		else{
@@ -1453,21 +1560,32 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
-		if(*(addr)=='.'||*addr=='~'||*addr=='-'||*addr=='_'){
+		if(strchr(tchar, *addr) !=NULL){
 			(**((*racine).fils)).tag="[8:case_insensitive_string]";
 		}
 		else{
 			(**((*racine).fils)).tag="[8:__alpha]";
 		}
+		if(*addr == ' '||*addr== '	')(**((*racine).fils)).tag="[8:__sp]";
 		parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[8:case_insensitive_string]")==0){
 		printf("                                %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*addr != '.' && *addr != '+'&&*addr!='*'&&*addr!='~'&&*addr!='_'&& *addr!='-')printf("Erreur Format [8:case_insensitive_string]\n" );return(0);
+		if(strchr(tchar, *addr) ==NULL){
+			printf("Erreur Format [8:case_insensitive_string]\n" );
+			return(0);
+		}
+	}
+	if(strcmp((*racine).tag,"[8:__sp]")==0){
+		printf("                                %s = %c%c%c\n",(*racine).tag,'"',*addr,'"');
+		if(*addr != ' ' && *addr != '	'){
+			printf("Erreur format __sp\n" );
+			return(0);
+		}
 	}
 	if(strcmp((*racine).tag,"[8:__alpha]")==0){
 		printf("                                %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*addr >= 'A' && *addr <= 'Z' || *addr >= 'a' && *addr <= 'z'){
+		if(strchr(alpha, *addr)!=NULL){
 			return(1);
 		}
 		else{
@@ -1477,7 +1595,7 @@ int parseur(char* addr,int taille, noeud* racine){
 	}
 	if(strcmp((*racine).tag,"[8:__digit]")==0){
 		printf("                                %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
-		if(*addr >= '0' && *addr <= '9'){
+		if(strchr(num, *addr)!=NULL){
 			return(1);
 		}
 		else{
@@ -1488,23 +1606,22 @@ int parseur(char* addr,int taille, noeud* racine){
 	return(1);
 }
 
-*/
+
 
 
 /*
 int main(int argc,char *argv[])
 {
 	noeud *racine = malloc(sizeof(noeud));
-	int res = 0;
-	int fi;
+	int res,i,fi;
 	char *p=NULL,*addr;
 
 
         struct stat st;
 
 	if (argc < 2 ) { printf("Usage: httpparser <file> <search>\nAttention <search> is case sensitive\n");  return 0; }
-	/* ouverture du fichier contenant la requête
-	if ((fi=_open(argv[1],O_RDWR)) == -1) {
+	// ouverture du fichier contenant la requête 
+	if ((fi=open(argv[1],O_RDWR)) == -1) {
                 perror("open");
                 return false;
         }
@@ -1526,7 +1643,7 @@ int main(int argc,char *argv[])
 	}
 	// call parser and get results.
 	parseur(addr,st.st_size,racine);
-	_close(fi);
+	close(fi);
 	return(res);
 }
 */
