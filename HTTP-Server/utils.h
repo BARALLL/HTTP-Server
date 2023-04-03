@@ -1,14 +1,16 @@
 #pragma once
 
-#ifndef API_H
-#define API_H
-#include "api.h"
-#endif
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
 #include "global.h"
 #endif
+
+#ifndef API_H
+#define API_H
+#include "api.h"
+#endif
+
 
 //get queue pointer of _Token linked list
 void* getQueueTree();

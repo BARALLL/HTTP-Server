@@ -1,11 +1,6 @@
 #include "api.h"
-#include <stdio.h> 
-#include <string.h>
-#include <stdlib.h>
 #pragma warning(disable : 4996)
 
-
-_Token* root = NULL;
 
 
 void* getRootTree()
@@ -120,9 +115,10 @@ void purgeTree(void* current)      //supprime tout l'arbre genealogique en parta
 }
 
 
-
+/*
 int parseur(char* req, int len)
 {
     noeud* racine = malloc(sizeof(noeud));
     return parseur(req, len, racine);
 }
+*/

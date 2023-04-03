@@ -8,6 +8,8 @@
 #include <errno.h>
 
 #include "utils.h"
+#include "global.h"
+#include "api.h"
 #pragma warning(disable : 4996)
 
 #ifdef _WIN32
@@ -33,7 +35,7 @@
 #define true 1 
 #define false 0 
 
-
+/*
 int main(int argc,char *argv[])
 {
 	int res,fi;
@@ -82,10 +84,10 @@ int main(int argc,char *argv[])
 	_close(fi);
 	return(res); 
 }
-
+*/
 
 //old main used to test utils.c
-int testUtils()
+int main()
 {
 	//noeud* root = calloc(1, sizeof(noeud));
 	//_treeNode* node = &(_treeNode){NULL, 0, NULL, 0, getRootTree(), NULL, NULL, NULL};

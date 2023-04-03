@@ -1,12 +1,13 @@
 // defini un type pour la liste chainee renvoyée en réponse de la requete de recherche dans l'arbre. 
-#ifndef UTILS_H
-#define UTILS_H
-#include "utils.h"
-#endif
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
 #include "global.h"
+#endif
+
+#ifndef UTILS_H
+#define UTILS_H
+#include "utils.h"
 #endif
 
 
