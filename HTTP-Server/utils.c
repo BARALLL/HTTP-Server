@@ -11,9 +11,32 @@ void* getQueueTree()
 }
 
 
+void init()
+{
+    _Token* r = calloc(1, sizeof(_Token));
+    if (r)
+    {
+        noeud* nodeR = calloc(1, sizeof(noeud));
+        if (nodeR)
+        {
+            nodeR->pere = NULL;
+            nodeR->tag = calloc(1, sizeof(char));
+            nodeR->value = calloc(1, sizeof(char));
+            nodeR->taille = 0;
+            nodeR->nombrefils = 0;
+            nodeR->fils = calloc(0, sizeof(noeud));
+            r->node = nodeR;      //no field needs to be initialized as calloc already do it
+        }
+        root = r;
+        root->node = nodeR;
+    }
+}
+
 
 void* addNode(char* tag, char* value, int taille, noeud** pere)
 {
+    if (pere == NULL) 
+        pere = &((noeud*)(root->node));
     noeud* node = (noeud*)calloc(1, sizeof(noeud));
     if (node)
     {
@@ -32,11 +55,15 @@ void* addNode(char* tag, char* value, int taille, noeud** pere)
 
 void insertNode(noeud* node, noeud** pere)
 {
+    if (!node) return;
+    if (pere == NULL) 
+        pere = &((noeud*)(root->node));
     if (*pere)
     {
         node->pere = *pere;
         (*pere)->nombrefils++;
         (*pere)->fils = realloc((*pere)->fils, sizeof(noeud*) * (*pere)->nombrefils);
+        if (!(*pere)->fils) { printf("Error S101 in realloc, abording"); exit(EXIT_FAILURE); }
 
         if ((*pere)->fils)
             (*pere)->fils[(*pere)->nombrefils - 1] = node;
@@ -46,11 +73,56 @@ void insertNode(noeud* node, noeud** pere)
         _Token** r = getRootTree();
         *r = calloc(1, sizeof(_Token*));
         if (*r)
-            (*r)->node = node;
+        {
+            noeud* nodeR = (noeud*)calloc(1, sizeof(noeud));
+            if (nodeR)
+            {
+                nodeR->tag = NULL;
+                nodeR->value = NULL;
+                nodeR->taille = 0;
+                nodeR->nombrefils = 1;
+                nodeR->fils = calloc(1, sizeof(noeud*));
+                if (nodeR->fils) { node->pere = nodeR; nodeR->fils[0] = node; }
+                (*r)->node = nodeR;
+            }
+        }
     }
+
     addToken(getRootTree(), node);
 }
 
+//marche pas pour le moment et fonction surement pas utile
+/*
+void changeParent(noeud** current, noeud** newParent)
+{
+
+    short found = 0;
+    noeud* pere = (*current)->pere;
+
+
+    int indexFoundAt = 0;
+    for (int ii = 0; ii < pere->nombrefils && !found; ii++)
+    {
+        if (pere->fils[ii] == (*current))
+        {
+            found = 1;
+            indexFoundAt = ii;
+        }
+    }
+
+    for (int j = indexFoundAt; j < pere->nombrefils - 1; j++)
+        pere->fils[j] = pere->fils[j + 1];
+
+    (*current)->pere->nombrefils--;
+    (*current)->pere->fils = realloc((*newParent)->fils, sizeof(noeud*) * (*newParent)->nombrefils);
+    if (!(*current)->pere->fils) { printf("Error S101 in realloc, abording"); exit(EXIT_FAILURE); }
+    (*current)->pere = *newParent;
+    
+    (*newParent)->nombrefils++;
+    (*newParent)->fils = realloc((*newParent)->fils, sizeof(noeud*) * (*newParent)->nombrefils);
+    if (!(*newParent)->fils) { printf("Error S101 in realloc, abording"); exit(EXIT_FAILURE); }
+}
+*/
 
 void addToken(_Token** _tList, void* node) {
     _Token* newToken = (_Token*)calloc(1, sizeof(_Token));
@@ -144,10 +216,14 @@ void showToken(_Token* start)
 
 void showTree(void* start)
 {
-    if (start == NULL) start = (*(_Token**)(getRootTree()))->node;
+    int count = 0;
     printf("\n\n");
-    printNode(start);
-    _showRecursive(start, 1);
+    if (start == NULL) start = (noeud*)(root->node);
+    else {
+        printNode(start); 
+        count++;
+    }
+    _showRecursive(start, count);
 }
 
 // recursive tree show

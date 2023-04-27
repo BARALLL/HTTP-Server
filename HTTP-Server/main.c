@@ -38,6 +38,8 @@
 
 int main(int argc,char *argv[])
 {
+	testUtils();
+	return 0;
 	int res,fi;
 	char *p=NULL,*addr;
     struct stat st;
@@ -91,8 +93,8 @@ int testUtils()
 {
 	//noeud* root = calloc(1, sizeof(noeud));
 	//_treeNode* node = &(_treeNode){NULL, 0, NULL, 0, getRootTree(), NULL, NULL, NULL};
-
-	noeud* parent = (noeud*)addNode("[1:header_field]", NULL, 0, getRootTree());
+	init();
+	noeud* parent = (noeud*)addNode("[1:header_field]", NULL, 0, NULL);
 	//printf("parent%p prev%p next%p child%p\n", parent->parent, parent->prevSib, parent->nextSib, parent->child);
 	
 	noeud* child1 = (noeud*)addNode("[2:Connection_header]", NULL, 0, &parent);
@@ -102,19 +104,24 @@ int testUtils()
 
 	noeud* child2 = (noeud*)addNode("[2:Accept_Encoding_header]", NULL, 0, &parent);
 	noeud* childOfChild2 = (noeud*)addNode("[3:case_insensitive_string]", NULL, 0, &child2);
-	noeud* child2OfChild2 = (noeud*)addNode("[1:header_field]", NULL, 0, &child2);
+	noeud* child2OfChild2 = (noeud*)addNode("[3:aaaaa]", NULL, 0, &child2);
+	noeud* child3OfChild1 = (noeud*)addNode("[2:bbbbbbbbbbb]", NULL, 0, &child1);
 
-
+	noeud* newParent = (noeud*)addNode("[1:the first]", NULL, 0, NULL);
+	
 	
 	//showTree(NULL);
 	//showToken(getRoot());
 	showTree(parent);
 	showTree(child2);
+
+	changeParent(&parent, &newParent);
+
 	//deleteNode(getRootTree(), childSib);
-	_Token* result = searchTree(parent, "[1:header_field]");
+	_Token* result = searchTree(NULL, "[1:header_field]");
 	purgeTree(child2);
 	
-	showTree(parent);
+	showTree(NULL);
 	
 	//showToken(getRootTree());
 

@@ -11,6 +11,8 @@
 #include "api.h"
 #endif
 
+//initialize root
+void init();
 
 //get queue pointer of _Token linked list
 void* getQueueTree();
@@ -20,6 +22,8 @@ void* addNode(char* tag, char* value, int taille, noeud** pere);
 
 //insert node in tree and link it to parent
 void insertNode(noeud* node, noeud** pere);
+
+void changeParent(noeud** current, noeud** newParent);
 
 //add token to list of _Token
 void addToken(_Token** _tList, void* node);

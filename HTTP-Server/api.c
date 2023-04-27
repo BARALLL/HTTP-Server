@@ -5,6 +5,7 @@
 
 void* getRootTree()
 {
+    if (root == NULL) init();
     return &root;
 }
 
@@ -12,7 +13,7 @@ void* getRootTree()
 
 _Token* searchTree(void* start, char* name) {
     _Token* result = NULL;
-    if (start == NULL) start = (*(_Token**)(getRootTree()))->node;
+    if (start == NULL) start = (noeud*)root->node;
     _searchRecursive(start, name, &result);
     showToken(result);
     return result;
@@ -78,22 +79,20 @@ void purgeTree(void* current)      //supprime tout l'arbre genealogique en parta
         purgeTree(currentNode->fils[0]);
 
     if (pere && pere->nombrefils > 0) {
-        
-        noeud* pere = currentNode->pere;
-
-        int i = 0;
-        for (int ii = 0; i < pere->nombrefils && !found; ii++)
+       
+        int indexFoundAt = 0;
+        for (int ii = 0; ii < pere->nombrefils && !found; ii++)
         {
             if (pere->fils[ii] == currentNode) 
             {
                 found = 1;
-                i = ii;
+                indexFoundAt = ii;
             }
         }
 
-        free(pere->fils[i]);
+        free(pere->fils[indexFoundAt]);
 
-        for (int j = i; j < pere->nombrefils - 1; j++)
+        for (int j = indexFoundAt; j < pere->nombrefils - 1; j++)
             pere->fils[j] = pere->fils[j + 1];
 
         pere->nombrefils--;

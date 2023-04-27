@@ -19,4 +19,4 @@ typedef struct noeud {
 	struct noeud** fils;
 } noeud;
 
-static _Token* root = NULL;
+_Token* root;
