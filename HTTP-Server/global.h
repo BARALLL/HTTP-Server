@@ -19,4 +19,4 @@ typedef struct noeud {
 	struct noeud** fils;
 } noeud;
 
-_Token* root;
+_Token* globalroot;

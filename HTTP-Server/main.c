@@ -1,6 +1,6 @@
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <string.h> 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -26,112 +26,86 @@
 #include "winunistd.h"
 #endif
 
-#ifdef __linux__ 
+#ifdef __linux__
 #include <unistd.h>
 #include <sys/mman.h>
 #endif
 
 
-#define true 1 
-#define false 0 
+#define true 1
+#define false 0
 
 
-int main(int argc,char *argv[])
+int main(int argc, char* argv[])
 {
-	testUtils();
-	return 0;
+	int res, fi;
+	char* p = NULL, * addr;
+	struct stat st;
 
-	int res,fi;
-	char *p=NULL,*addr;
-    struct stat st;
-
-	if (argc < 2 ) { printf("Usage: httpparser <file> <search>\nAttention <search> is case sensitive\n");  return 0; }
+	//if (argc < 2) { printf("Usage: httpparser <file> <search>\nAttention <search> is case sensitive\n");  return 0; }
 	// ouverture du fichier contenant la requête
-	if ((fi=_open(argv[1],O_RDWR)) == -1) {
-                perror("open");
-                return false;
-        }
-        if (fstat(fi, &st) == -1)           //To obtain file size
-                return false;
-        if ((addr=mmap(NULL,st.st_size,PROT_WRITE,MAP_PRIVATE, fi, 0)) == NULL )
-                return false;
+	if ((fi = open("fuzzer/testFile/test0.txt", O_RDWR)) == -1) {
+		perror("open");
+		return false;
+	}
+	if (fstat(fi, &st) == -1)           //To obtain file size
+		return false;
+	if ((addr = mmap(NULL, st.st_size, PROT_WRITE, MAP_PRIVATE, fi, 0)) == NULL)
+		return false;
 
 	// This is a special HACK since identificateur in C can't have character '-'
 
-	if (argc == 3 ) { 
-		p=argv[2]; 	
-		printf("searching for %s\n",p); 
-		while (*p) { 
-			if (*p=='-') { *p='_'; }
-			p++; 
+	if (argc == 3) {
+		p = argv[2];
+		printf("searching for %s\n", p);
+		while (*p) {
+			if (*p == '-') { *p = '_'; }
+			p++;
 		}
-		p=argv[2]; 	
+		p = argv[2];
 	}
-	// call parser and get results. 
-	if (res=parseur(addr,st.st_size)) {
-		_Token *r,*tok; 
-		void *root=NULL;
-		root=getRootTree(); 
-		r=searchTree(root,p); 
-		tok=r; 
+	// call parser and get results.
+	if (res = parseur(addr, st.st_size)) {
+		_Token* r, * tok;
+		void* root = NULL;
+		root = getRootTree();
+		r = searchTree(root, p);
+		tok = r;
 		while (tok) {
-			int l; 
-			char *s; 
-			s=getElementValue(tok->node,&l); 
-			printf("FOUND [%.*s]\n",l,s);
-			tok=tok->next; 
+			int l;
+			char* s;
+			s = getElementValue(tok->node, &l);
+			printf("FOUND [%.*s]\n", l, s);
+			tok = tok->next;
 		}
+		// showTree(root2);
 		purgeElement(&r);
-		purgeTree(root);
+		purgeTree(&root);
 	}
-	_close(fi);
-	return(res); 
+	close(fi);
+	printf("res = %d\n", res);
+	return(res);
 }
 
 
-//old main used to test utils.c
-int testUtils()
+
+/*
+int main(int argc, char* argv[])
 {
-	//noeud* root = calloc(1, sizeof(noeud));
-	//_treeNode* node = &(_treeNode){NULL, 0, NULL, 0, getRootTree(), NULL, NULL, NULL};
-	
-	init(); //très importante, a conserver
 
-
-	noeud* parent = (noeud*)addNode("[1:header_field]", NULL, 0, NULL);
-	//printf("parent%p prev%p next%p child%p\n", parent->parent, parent->prevSib, parent->nextSib, parent->child);
-	
-	noeud* child1 = (noeud*)addNode("[2:Connection_header]", NULL, 0, &parent);
-	
-	//addSibling(parent->child, child);
-	//printf("parent%p prev%p next%p child%p\n", child->parent, child->prevSib, child->nextSib, child->child);
-
-	noeud* child2 = (noeud*)addNode("[2:Accept_Encoding_header]", NULL, 0, &parent);
-	noeud* childOfChild2 = (noeud*)addNode("[3:case_insensitive_string]", NULL, 0, &child2);
-	noeud* child2OfChild2 = (noeud*)addNode("[3:aaaaa]", NULL, 0, &child2);
-	noeud* child3OfChild1 = (noeud*)addNode("[2:bbbbbbbbbbb]", NULL, 0, &child1);
-
-	noeud* newParent = (noeud*)addNode("[1:the first]", NULL, 0, NULL);
-	
-	
-	//showTree(NULL);
-	//showToken(getRoot());
-	showTree(parent);
-	showTree(child2);
-
-	//changeParent(&parent, &newParent);
-
-	//deleteNode(getRootTree(), childSib);
-	_Token* result = searchTree(NULL, "[1:header_field]");
-	purgeTree(child2);
-	
-	showTree(NULL);
-	
-	//showToken(getRootTree());
-
-	//char* req = "startWS-?7-t_?fin\n";
-	//int ret = parseur(req, strlen(req));
-	//printf("val retour %d", ret);
-	//return ret;
-	return 0;
+	argc = 2;
+	int num = 321;
+	char snum[10];
+	char* buf[20] = calloc(2, sizeof(char*));
+	// Convert 123 to string [buf]
+	itoa(num, snum, 10);
+	for (int i = 0; i < 10000; i++)
+	{
+		itoa(i, snum, 10);
+		strcat(snum, ".txt");
+		strcat(strcpy(buf[1], "test"), snum);
+		main2(2, buf);
+	}
+	main2();
 }
+*/

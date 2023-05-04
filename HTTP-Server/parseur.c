@@ -3,52 +3,33 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#ifdef _WIN32
-/*
-* Special thanks to klauspost for their windows version of the mman library
-* https://github.com/klauspost/mman-win32
-*/
-#include "mman.h"
-
-/*
-* Special thanks to AShelly for their windows version of the unistd library
-* https://stackoverflow.com/a/826027/1202830
-*/
-#include "winunistd.h"
-#endif
-#ifdef __linux__ 
 #include <unistd.h>
 #include <sys/mman.h>
-#endif
-
 #include <fcntl.h>
 #include <errno.h>
 
+
+#include "global.h"
 
 #define false 0
 
 char* alpha = "azertyyuiopqsdfghjklmwxcvbnAZERTYUIOPMLKJHGFDSQWXCVBN";
 char* num = "1234567890";
 char* tchar = "!!/#$%&(\");\n\\\r[] 	@:'=,*+-.^_`|~azertyyuiopqsdfghjklmwxcvbnAZERTYUIOPMLKJHGFDSQWXCVBN1234567890";
-typedef struct noeud {
-		struct noeud *pere;
-    char *tag;
-		char *value;
-    int taille;
-    int nombrefils;
-    struct noeud **fils;
-  } noeud;
+
+
+
 
 //Pour printf le champ tag ou value d'un fils : (**((*racine).fils+i)).value
 
-int parseur(char* addr,int taille, noeud* racine){
+int parseur_aux(char* addr,int taille, noeud* racine){
 
   int index = 0;
   if((*racine).pere==NULL){
       (*racine).tag = "[0:HTTP_message]";
       (*racine).value = addr;
       (*racine).taille = taille;
+			addNode("[0:HTTP_message]",NULL,0, racine);
 			printf("[0:HTTP_message] = %c%c%c%c..%c%c%c%c\n",'"',*(addr),*(addr+1),*(addr+2),*(addr+(*racine).taille-3),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),'"' );
     int nombreenfant=2;
     index = 0;
@@ -89,7 +70,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			}
 		}
 		for(int i = 0; i<(*racine).nombrefils;i++){
-			if(parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
 		}}
 	if(strcmp((*racine).tag,"[1:__crlf]")==0){
 		printf("    %s = %c%c%c%c\n",(*racine).tag,'"',*addr,*(addr+1),'"');
@@ -105,7 +86,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**(*racine).fils).tag="[2:request_line]";
 		(**(*racine).fils).value=(*racine).value;
 		(**(*racine).fils).taille=(*racine).taille;
-		if(parseur((*racine).value,(*racine).taille,*((*racine).fils))==0)return(0);
+		if(parseur_aux((*racine).value,(*racine).taille,*((*racine).fils))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[1:header_field]")==0){
 		printf("    %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-3+(*racine).taille),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),'"' );
@@ -133,7 +114,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		}
 		if(strncmp((*racine).value,"Connection:",sizeof("Connection:")-1)==0){
 			(**((*racine).fils)).tag = "[2:Connection_header]";}
-		parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils));
+		parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[2:Host_header]")==0){
 		printf("        %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-3+(*racine).taille),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),'"' );
@@ -177,7 +158,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		for(int index2=0;*(addr+index+index2)!='\r';index2++)
 		(**((*racine).fils+nombreenfant-1)).taille = index2;
 		for(int i = 0; i <(*racine).nombrefils;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 
 	}
@@ -189,7 +170,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**(*racine).fils).tag="[3:token]";
 		(**(*racine).fils).value=(*racine).value;
 		(**(*racine).fils).taille=(*racine).taille;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[2:User_Agent_header]")==0){
 		printf("        %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),*(addr+(*racine).taille),'"' );
@@ -234,7 +215,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		}
 		else{(*racine).nombrefils--;}
 		for(int i = 0; i <(*racine).nombrefils;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[2:Accept_header]")==0){
@@ -271,7 +252,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		for(int index2=0;*(addr+index+index2)!='\r';index2++)
 		(**((*racine).fils+3)).taille = index2;
 		for(int i = 0; i <(*racine).nombrefils;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[2:Accept_Language_header]")==0){
@@ -309,7 +290,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+4)).taille=1;
 			(**((*racine).fils+4)).value=addr+index-1;
 			for(int i = 0; i <(*racine).nombrefils;i++){
-				parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+				parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 			}
 		}
 	if(strcmp((*racine).tag,"[2:Accept_Encoding_header]")==0){
@@ -346,7 +327,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		for(int index2=0;*(addr+index+index2)!='\r';index2++)
 		(**((*racine).fils+3)).taille = index2;
 		for(int i = 0; i <(*racine).nombrefils;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[2:Connection_header]")==0){
@@ -387,7 +368,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		for(int index2=0;*(addr+index+index2)!='\r';index2++)
 		(**((*racine).fils+(*racine).nombrefils-1)).taille = index2;
 		for(int i = 0; i <(*racine).nombrefils;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[2:request_line]")==0){
@@ -400,7 +381,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			for(index=0;*(addr+index)!=' ';index++) (**((*racine).fils)).taille=index;
 			(**((*racine).fils)).tag="[3:method]";
 			(**((*racine).fils)).pere=racine;
-			if(parseur((**(*racine).fils).value,(**(*racine).fils).taille,*((*racine).fils))==0)return(0);
+			if(parseur_aux((**(*racine).fils).value,(**(*racine).fils).taille,*((*racine).fils))==0)return(0);
 		}
 		{//SP
 			*((*racine).fils+1)=malloc(sizeof(noeud));
@@ -409,7 +390,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+1)).taille;
 			(**((*racine).fils+1)).tag="[3:__sp]";
 			(**((*racine).fils+1)).pere=racine;
-			if(parseur((**((*racine).fils+1)).value,(**((*racine).fils+1)).taille,*((*racine).fils +1 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+1)).value,(**((*racine).fils+1)).taille,*((*racine).fils +1 ))==0)return(0);
 		}
 		{//request_target
 			*((*racine).fils+2)=malloc(sizeof(noeud));
@@ -418,7 +399,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+2)).taille;
 			(**((*racine).fils+2)).tag="[3:request_target]";
 			(**((*racine).fils+2)).pere=racine;
-			if(parseur((**((*racine).fils+2)).value,(**((*racine).fils+2)).taille,*((*racine).fils +2 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+2)).value,(**((*racine).fils+2)).taille,*((*racine).fils +2 ))==0)return(0);
 		}
 		{//SP
 			*((*racine).fils+3)=malloc(sizeof(noeud));
@@ -427,7 +408,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+3)).taille;
 			(**((*racine).fils+3)).tag="[3:__sp]";
 			(**((*racine).fils+3)).pere=racine;
-			if(parseur((**((*racine).fils+3)).value,(**((*racine).fils+3)).taille,*((*racine).fils +3 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+3)).value,(**((*racine).fils+3)).taille,*((*racine).fils +3 ))==0)return(0);
 		}
 		{//HTTP_version
 			*((*racine).fils+4)=malloc(sizeof(noeud));
@@ -436,7 +417,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+4)).taille;
 			(**((*racine).fils+4)).tag="[3:HTTP_version]";
 			(**((*racine).fils+4)).pere=racine;
-			if(parseur((**((*racine).fils+4)).value,(**((*racine).fils+4)).taille,*((*racine).fils +4 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+4)).value,(**((*racine).fils+4)).taille,*((*racine).fils +4 ))==0)return(0);
 		}
 		{//__crlf
 			*((*racine).fils+5)=malloc(sizeof(noeud));
@@ -445,7 +426,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+5)).taille;
 			(**((*racine).fils+5)).tag="[3:__crlf]";
 			(**((*racine).fils+5)).pere=racine;
-			if(parseur((**((*racine).fils+5)).value,(**((*racine).fils+5)).taille,*((*racine).fils +5 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+5)).value,(**((*racine).fils+5)).taille,*((*racine).fils +5 ))==0)return(0);
 		}
 
 	}
@@ -461,7 +442,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**(*racine).fils).tag="[4:token]";
 		(**(*racine).fils).value=(*racine).value;
 		(**(*racine).fils).taille=(*racine).taille;
-		if(parseur((*racine).value,(*racine).taille,*((*racine).fils))==0)return(0);
+		if(parseur_aux((*racine).value,(*racine).taille,*((*racine).fils))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[3:Host]")==0){
 		printf("            %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),*(addr+(*racine).taille),'"' );
@@ -472,7 +453,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=(*racine).taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[3:User_Agent]")==0){
 		printf("            %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),*(addr+(*racine).taille),'"' );
@@ -521,7 +502,7 @@ int parseur(char* addr,int taille, noeud* racine){
 				index=index+index2;
 		}}
 			for(int i = 0; i<nombreenfant;i++){
-				parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+				parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 			}
 	}
 	if(strcmp((*racine).tag,"[3:case_insensitive_string]")==0){
@@ -545,7 +526,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 
 		}
 	}
@@ -589,7 +570,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=(*racine).taille;
 		(**((*racine).fils)).pere=racine;
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[3:Accept]")==0){
 		printf("            %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),*(addr+(*racine).taille),'"' );
@@ -619,7 +600,7 @@ int parseur(char* addr,int taille, noeud* racine){
 
 		}
 		for(int i = 0; i <(*racine).nombrefils;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[3:Accept_Language]")==0){
@@ -668,7 +649,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+index2;
 		}
 		for (int i = 0; i < nombreenfant; i++) {
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 
 	}
@@ -727,7 +708,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		}
 
 		for(int i =0;i<nombreenfant;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[3:HTTP_version]")==0){
@@ -746,7 +727,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			for(index=0;*(addr+index)!='/';index++) (**((*racine).fils)).taille=index;
 			(**((*racine).fils)).tag="[4:HTTP_name]";
 			(**((*racine).fils)).pere=racine;
-			if(parseur((**(*racine).fils).value,(**(*racine).fils).taille,*((*racine).fils))==0)return(0);
+			if(parseur_aux((**(*racine).fils).value,(**(*racine).fils).taille,*((*racine).fils))==0)return(0);
 		}
 		{//case_insensitive_string
 			*((*racine).fils+1)=malloc(sizeof(noeud));
@@ -755,7 +736,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+1)).taille;
 			(**((*racine).fils+1)).tag="[4:case_insensitive_string]";
 			(**((*racine).fils+1)).pere=racine;
-			if(parseur((**((*racine).fils+1)).value,(**((*racine).fils+1)).taille,*((*racine).fils +1 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+1)).value,(**((*racine).fils+1)).taille,*((*racine).fils +1 ))==0)return(0);
 		}
 		{//digit
 			*((*racine).fils+2)=malloc(sizeof(noeud));
@@ -764,7 +745,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+2)).taille;
 			(**((*racine).fils+2)).tag="[4:__digit]";
 			(**((*racine).fils+2)).pere=racine;
-			if(parseur((**((*racine).fils+2)).value,(**((*racine).fils+2)).taille,*((*racine).fils +2 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+2)).value,(**((*racine).fils+2)).taille,*((*racine).fils +2 ))==0)return(0);
 		}
 		{//case_insensitive_string
 			*((*racine).fils+3)=malloc(sizeof(noeud));
@@ -773,7 +754,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+3)).taille;
 			(**((*racine).fils+3)).tag="[4:case_insensitive_string]";
 			(**((*racine).fils+3)).pere=racine;
-			if(parseur((**((*racine).fils+3)).value,(**((*racine).fils+3)).taille,*((*racine).fils +3 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+3)).value,(**((*racine).fils+3)).taille,*((*racine).fils +3 ))==0)return(0);
 		}
 		{//digit
 			*((*racine).fils+4)=malloc(sizeof(noeud));
@@ -782,7 +763,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+(**((*racine).fils+4)).taille;
 			(**((*racine).fils+4)).tag="[4:__digit]";
 			(**((*racine).fils+4)).pere=racine;
-			if(parseur((**((*racine).fils+4)).value,(**((*racine).fils+4)).taille,*((*racine).fils +4 ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+4)).value,(**((*racine).fils+4)).taille,*((*racine).fils +4 ))==0)return(0);
 		}
 
 	}
@@ -799,7 +780,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=(*racine).taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[3:token]")==0){
 		printf("            %s = %c",(*racine).tag,'"');
@@ -814,7 +795,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			if(parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
 
 		}
 	}
@@ -827,7 +808,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=(*racine).taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[4:connection_option]")==0){
 		printf("                %s = %c",(*racine).tag,'"');
@@ -842,7 +823,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=(*racine).taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[4:__sp]")==0){
 		printf("                %s = %c%c%c\n",(*racine).tag,'"',*addr,'"');
@@ -868,7 +849,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[4:tchar]")==0){
 		printf("                %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
@@ -880,7 +861,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[4:codings]")==0){
 		printf("                %s = %c",(*racine).tag,'"');
@@ -895,7 +876,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[4:product]")==0){
 		printf("                %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-3+(*racine).taille),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),'"' );
@@ -919,7 +900,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils+2)).tag="[5:product_version]";
 		(**((*racine).fils+2)).taille=taille-index-2;
 		for (int i = 0; i < 3; i++) {
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[4:token]")==0){
@@ -935,7 +916,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			if(parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
 
 		}
 	}
@@ -954,7 +935,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 
 		}
 	}
@@ -1036,7 +1017,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+nombreenfant-1)).taille=taille-index-1;
 		}
 		for(int i = 0;i< nombreenfant;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[4:HTTP_name]")==0){
@@ -1053,7 +1034,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).taille=4;
 		(**((*racine).fils)).pere=racine;
 		(**((*racine).fils)).tag="[5:__num]";
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[4:comment]")==0){
 		printf("                %s = %c%c%c%c..%c%c%c%c\n",(*racine).tag,'"',*(addr),*(addr+1),*(addr+2),*(addr-3+(*racine).taille),*(addr-2+(*racine).taille),*(addr-1+(*racine).taille),'"' );
@@ -1065,7 +1046,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 
 		}
 	}
@@ -1110,7 +1091,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[4:weight]")==0){
 		printf("                %s = %c",(*racine).tag,'"');
@@ -1159,7 +1140,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			index=index+index2;
 		}
 		for (int i = 0; i < nombreenfant; i++) {
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[5:host]")==0){
@@ -1171,7 +1152,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=(*racine).taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[5:OWS]")==0){
 		printf("                    %s = %c%c%c\n",(*racine).tag,'"',*addr,'"');
@@ -1183,7 +1164,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 
 		}
 	}
@@ -1200,7 +1181,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[5:__alpha]")==0){
 		printf("                    %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
@@ -1227,7 +1208,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[5:token]")==0){
 		printf("                    %s = %c",(*racine).tag,'"');
@@ -1242,7 +1223,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			if(parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
+			if(parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ))==0)return(0);
 
 		}
 	}
@@ -1259,7 +1240,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[5:subtype]")==0){
 		printf("                    %s = %c",(*racine).tag,'"');
@@ -1274,7 +1255,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[5:parameter]")==0){
 		printf("                    %s = %c",(*racine).tag,'"');
@@ -1302,7 +1283,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils+2)).taille=taille-index-1;
 		(**((*racine).fils+2)).tag="[6:token]";
 		for(int i = 0;i< 3;i++){
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 		}
 	}
 	if(strcmp((*racine).tag,"[5:product_version]")==0){
@@ -1318,7 +1299,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=taille;
 		(**((*racine).fils)).pere = racine;
-		parseur((*racine).value,(*racine).taille,*((*racine).fils));
+		parseur_aux((*racine).value,(*racine).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[5:__num]")==0){
 		{
@@ -1342,7 +1323,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 
 		}
 	}
@@ -1368,7 +1349,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[5:ctext]")==0){
 		printf("                    %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
@@ -1379,7 +1360,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[5:absolute_path]")==0){
 		{
@@ -1415,7 +1396,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).pere=racine;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).tag="[6:case_insensitive_string]";
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils))==0)return(0);
 		for(int i = 1;i<compteur;i++){
 			for(index2 = 0;*(addr+index+index2)!='/';index2++)
 			*((*racine).fils+i)=malloc(sizeof(noeud));
@@ -1430,7 +1411,7 @@ int parseur(char* addr,int taille, noeud* racine){
 				(**((*racine).fils+i)).tag="[6:segment]";
 			}
 			index=index+index2+1;
-			if(parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils+i))==0)return(0);
+			if(parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils+i))==0)return(0);
 		}
 	}
 	if(strcmp((*racine).tag,"[6:case_insensitive_string]")==0){
@@ -1463,7 +1444,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[6:token]")==0){
 		printf("                        %s = %c",(*racine).tag,'"');
@@ -1478,7 +1459,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).value=addr+i;
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils +i ));
 
 		}
 	}
@@ -1494,7 +1475,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils+i)).taille=1;
 			(**((*racine).fils+i)).pere=racine;
 			(**((*racine).fils+i)).tag="[7:unreserved]";
-			parseur((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils+i));
+			parseur_aux((**((*racine).fils+i)).value,(**((*racine).fils+i)).taille,*((*racine).fils+i));
 		}
 	}
 	if(strcmp((*racine).tag,"[6:__digit]")==0){
@@ -1540,7 +1521,7 @@ int parseur(char* addr,int taille, noeud* racine){
 		(**((*racine).fils)).value=addr;
 		(**((*racine).fils)).taille=1;
 		(**((*racine).fils)).pere=racine;
-		if(parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
+		if(parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils ))==0)return(0);
 	}
 	if(strcmp((*racine).tag,"[7:__alpha]")==0){
 		printf("                            %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
@@ -1567,7 +1548,7 @@ int parseur(char* addr,int taille, noeud* racine){
 			(**((*racine).fils)).tag="[8:__alpha]";
 		}
 		if(*addr == ' '||*addr== '	')(**((*racine).fils)).tag="[8:__sp]";
-		parseur((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils));
+		parseur_aux((**((*racine).fils)).value,(**((*racine).fils)).taille,*((*racine).fils));
 	}
 	if(strcmp((*racine).tag,"[8:case_insensitive_string]")==0){
 		printf("                                %s = %c%c%c\n",(*racine).tag,'"',*(addr),'"' );
@@ -1606,44 +1587,12 @@ int parseur(char* addr,int taille, noeud* racine){
 	return(1);
 }
 
-
-
-
-/*
-int main(int argc,char *argv[])
-{
-	noeud *racine = malloc(sizeof(noeud));
-	int res,i,fi;
-	char *p=NULL,*addr;
-
-
-        struct stat st;
-
-	if (argc < 2 ) { printf("Usage: httpparser <file> <search>\nAttention <search> is case sensitive\n");  return 0; }
-	// ouverture du fichier contenant la requête 
-	if ((fi=open(argv[1],O_RDWR)) == -1) {
-                perror("open");
-                return false;
-        }
-        if (fstat(fi, &st) == -1)           // To obtain file size
-                return false;
-        if ((addr=mmap(NULL,st.st_size,PROT_WRITE,MAP_PRIVATE, fi, 0)) == NULL )
-                return false;
-
-	// This is a special HACK since identificateur in C can't have character '-'
-
-	if (argc == 3 ) {
-		p=argv[2];
-		printf("searching for %s\n",p);
-		while (*p) {
-			if (*p=='-') { *p='_'; }
-			p++;
-		}
-		p=argv[2];
-	}
-	// call parser and get results.
-	parseur(addr,st.st_size,racine);
-	close(fi);
-	return(res);
+// appel la fonction parseur de la bonne façon
+int parseur(char *req, int len){
+		int res=-1;
+		globalroot = malloc(sizeof(_Token*));
+		noeud *racine = malloc(sizeof(noeud));
+		res = parseur_aux(req, len, racine);
+		globalroot->node = racine;
+		return res;
 }
-*/

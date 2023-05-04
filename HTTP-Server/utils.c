@@ -1,13 +1,12 @@
 #include "utils.h"
-#pragma warning(disable : 4996)
-
+#include "string.h"
 
 static _Token* queue = NULL;
 
 
 void* getQueueTree()
 {
-    return &queue;
+    return queue;
 }
 
 
@@ -27,16 +26,16 @@ void init()
             nodeR->fils = calloc(0, sizeof(noeud));
             r->node = nodeR;      //no field needs to be initialized as calloc already do it
         }
-        root = r;
-        root->node = nodeR;
+        globalroot = r;
+        globalroot->node = nodeR;
     }
 }
 
 
-void* addNode(char* tag, char* value, int taille, noeud** pere)
+void* addNode(char* tag, char* value, int taille, noeud* pere)
 {
-    if (pere == NULL) 
-        pere = &((noeud*)(root->node));
+    if (pere == NULL)
+        pere = (noeud*)(globalroot->node);
     noeud* node = (noeud*)calloc(1, sizeof(noeud));
     if (node)
     {
@@ -53,26 +52,26 @@ void* addNode(char* tag, char* value, int taille, noeud** pere)
 }
 
 
-void insertNode(noeud* node, noeud** pere)
+void insertNode(noeud* node, noeud* pere)
 {
     if (!node) return;
-    if (pere == NULL) 
-        pere = &((noeud*)(root->node));
-    if (*pere)
+    if (pere == NULL)
+        pere = (noeud*)(globalroot->node);
+    if (pere)
     {
-        node->pere = *pere;
-        (*pere)->nombrefils++;
-        (*pere)->fils = realloc((*pere)->fils, sizeof(noeud*) * (*pere)->nombrefils);
-        if (!(*pere)->fils) { printf("Error S101 in realloc, abording"); exit(EXIT_FAILURE); }
+        node->pere = pere;
+        pere->nombrefils++;
+        pere->fils = realloc(pere->fils, sizeof(noeud*) * pere->nombrefils);
+        if (!pere->fils) { printf("Error S101 in realloc, abording"); exit(EXIT_FAILURE); }
 
-        if ((*pere)->fils)
-            (*pere)->fils[(*pere)->nombrefils - 1] = node;
+        if (pere->fils)
+            pere->fils[pere->nombrefils - 1] = node;
     }
     else
     {
-        _Token** r = getRootTree();
-        *r = calloc(1, sizeof(_Token*));
-        if (*r)
+        _Token* r = getRootTree();
+        r = calloc(1, sizeof(_Token*));
+        if (r)
         {
             noeud* nodeR = (noeud*)calloc(1, sizeof(noeud));
             if (nodeR)
@@ -83,7 +82,7 @@ void insertNode(noeud* node, noeud** pere)
                 nodeR->nombrefils = 1;
                 nodeR->fils = calloc(1, sizeof(noeud*));
                 if (nodeR->fils) { node->pere = nodeR; nodeR->fils[0] = node; }
-                (*r)->node = nodeR;
+                (r)->node = nodeR;
             }
         }
     }
@@ -117,32 +116,32 @@ void changeParent(noeud** current, noeud** newParent)
     (*current)->pere->fils = realloc((*newParent)->fils, sizeof(noeud*) * (*newParent)->nombrefils);
     if (!(*current)->pere->fils) { printf("Error S101 in realloc, abording"); exit(EXIT_FAILURE); }
     (*current)->pere = *newParent;
-    
+
     (*newParent)->nombrefils++;
     (*newParent)->fils = realloc((*newParent)->fils, sizeof(noeud*) * (*newParent)->nombrefils);
     if (!(*newParent)->fils) { printf("Error S101 in realloc, abording"); exit(EXIT_FAILURE); }
 }
 */
 
-void addToken(_Token** _tList, void* node) {
+void addToken(_Token* _tList, void* node) {
     _Token* newToken = (_Token*)calloc(1, sizeof(_Token));
     if (newToken)
     {
         newToken->next = NULL;
         newToken->node = node;
 
-        if (*_tList == NULL)
-            *_tList = newToken;
+        if (_tList == NULL)
+            _tList = newToken;
         else
         {   //add token in queue; keep reference of the end of the linked list for performance purposes
-            _Token** queue = getQueueTree();
-            if (*queue != NULL)
+            _Token* queue = getQueueTree();
+            if (queue != NULL)
             {
-                (*queue)->next = newToken;
-                *queue = (*queue)->next;
+                queue->next = newToken;
+                queue = queue->next;
             }
             else
-                *queue = newToken;
+                queue = newToken;
         }
     }
     else
@@ -154,9 +153,11 @@ void addToken(_Token** _tList, void* node) {
 // Recursive research in the tree
 void _searchRecursive(void* node, char* name, _Token** result)
 {
+  if(node && name && result)
+  {
     int len;
     char* tag = getElementTag(node, &len);
-    if (tag != NULL && len == (int)strlen(name) && strncmp(tag, name, len) == 0)
+    if (tag != NULL && len-4 == (int)strlen(name) && strncmp(tag+3, name, len-4) == 0)
     {
         _Token* token = (_Token*)malloc(sizeof(_Token));
         if (token)
@@ -169,6 +170,7 @@ void _searchRecursive(void* node, char* name, _Token** result)
 
     for (int i = 0; i < ((noeud*)node)->nombrefils; i++)
         _searchRecursive(((noeud*)node)->fils[i], name, result);
+  }
 }
 
 
@@ -203,6 +205,7 @@ void showToken(_Token* start)
     {
         printf("\n\n");
         _Token* ptr = start;
+        printNode(ptr->node);
         while (ptr->next)
         {
             printNode(ptr->node);
@@ -210,7 +213,7 @@ void showToken(_Token* start)
         }
     }
     else
-        showToken((*(_Token**)(getRootTree())));
+        showToken((_Token*)(getRootTree()));
 }
 
 
@@ -218,9 +221,10 @@ void showTree(void* start)
 {
     int count = 0;
     printf("\n\n");
-    if (start == NULL) start = (noeud*)(root->node);
+    if (start == NULL || (((_Token*)start) == globalroot)) start = (noeud*)(globalroot->node);
     else {
-        printNode(start); 
+        start = (noeud*)(((_Token*)start)->node);
+        printNode(start);
         count++;
     }
     _showRecursive(start, count);
@@ -232,15 +236,12 @@ void _showRecursive(void* node, int count)
     if (node)
     {
         noeud* currentNode = ((noeud*)node);
-        if (currentNode->nombrefils > 0)
+        for (int i = 0; i < currentNode->nombrefils; i++)
         {
-            for (int i = 0; i < currentNode->nombrefils; i++)
-            {
-                for (int j = 0; j < count; j++)
-                    printf("|    ");
-                printNode(currentNode->fils[i]);
-                _showRecursive(currentNode->fils[i], count + 1);
-            }
+            for (int j = 0; j < count; j++)
+                printf("|    ");
+            printNode(currentNode->fils[i]);
+            _showRecursive(currentNode->fils[i], count + 1);
         }
     }
 }

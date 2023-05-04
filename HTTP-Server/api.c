@@ -1,19 +1,19 @@
 #include "api.h"
+#include "utils.h"
 #pragma warning(disable : 4996)
 
 
 
 void* getRootTree()
 {
-    if (root == NULL) init();
-    return &root;
+    return globalroot;
 }
 
 
 
 _Token* searchTree(void* start, char* name) {
     _Token* result = NULL;
-    if (start == NULL) start = (noeud*)root->node;
+    if (start == getRootTree()) start = (noeud*)globalroot->node;
     _searchRecursive(start, name, &result);
     showToken(result);
     return result;
@@ -29,7 +29,7 @@ char* getElementTag(void* node, int* len)
     noeud* n = ((noeud*)node);
 
     char* str = (char*)malloc(strlen(n->tag));
-    if (str) 
+    if (str)
     {
         strcpy(str, n->tag);
         *len = strlen(str);
@@ -52,7 +52,7 @@ char* getElementValue(void* node, int* len)
 
 
 
-void purgeElement(_Token** r) //supprime toute la liste chainée de _Token
+void purgeElement(_Token** r) //supprime toute la liste chainï¿½e de _Token
 {
     _Token* currToken = *r;
 
@@ -67,23 +67,23 @@ void purgeElement(_Token** r) //supprime toute la liste chainée de _Token
 
 
 
-void purgeTree(void* current)      //supprime tout l'arbre genealogique en partant du current 
+void purgeTree(void* current)      //supprime tout l'arbre genealogique en partant du current
 {
     short found = 0;
-    noeud* currentNode = ((noeud*)current);
+    noeud* currentNode = (noeud*)(((_Token*)current)->node);
     if (currentNode == NULL) return;
 
-    
+
     noeud* pere = currentNode->pere;
     while (currentNode->nombrefils > 0)
         purgeTree(currentNode->fils[0]);
 
     if (pere && pere->nombrefils > 0) {
-       
+
         int indexFoundAt = 0;
         for (int ii = 0; ii < pere->nombrefils && !found; ii++)
         {
-            if (pere->fils[ii] == currentNode) 
+            if (pere->fils[ii] == currentNode)
             {
                 found = 1;
                 indexFoundAt = ii;
@@ -96,18 +96,22 @@ void purgeTree(void* current)      //supprime tout l'arbre genealogique en parta
             pere->fils[j] = pere->fils[j + 1];
 
         pere->nombrefils--;
-        if (pere->nombrefils == 0) 
+        if (pere->nombrefils == 0)
         {
             free(pere->fils);
             pere->fils = NULL;
         }
         else
+        {
             pere->fils = realloc(pere->fils, sizeof(noeud) * pere->nombrefils);
+            if (!pere->fils) { printf("Error S101 in realloc, abording"); exit(EXIT_FAILURE); }
+        }
+            
     }
-    else 
+    else
     {
-        if (currentNode == (*(_Token**)(getRootTree()))->node)
-            (*(_Token**)(getRootTree()))->node = NULL;
+        if (currentNode == globalroot->node)
+            globalroot->node = NULL;
 
         free(currentNode);
     }
