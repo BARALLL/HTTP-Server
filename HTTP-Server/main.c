@@ -1,111 +1,77 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <string.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include "request.h"   
 
-#include <fcntl.h>
-#include <errno.h>
+#define REPONSE "HTTP/1.0 200 OK\r\n\r\n"
 
-#include "utils.h"
-#include "global.h"
-#include "api.h"
-#pragma warning(disable : 4996)
+#ifndef LEGACY
+// ceci decrit la methode experimentale de renvoi de la reponse Cf API
 
-#ifdef _WIN32
-/*
-* Special thanks to klauspost for their windows version of the mman library
-* https://github.com/klauspost/mman-win32
-*/
-#include "mman.h"
+#define REPONSE1 "HTTP/1.0 200 OK\r\n"
+#define REPONSE2 "\r\n"
 
-/*
-* Special thanks to AShelly for their windows version of the unistd library
-* https://stackoverflow.com/a/826027/1202830
-*/
-#include "winunistd.h"
-#endif
-
-#ifdef __linux__
-#include <unistd.h>
-#include <sys/mman.h>
-#endif
-
-
-#define true 1
-#define false 0
-
-
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-	int res, fi;
-	char* p = NULL, * addr;
-	struct stat st;
+	message *requete; 
 
-	//if (argc < 2) { printf("Usage: httpparser <file> <search>\nAttention <search> is case sensitive\n");  return 0; }
-	// ouverture du fichier contenant la requête
-	if ((fi = open("fuzzer/testFile/test0.txt", O_RDWR)) == -1) {
-		perror("open");
-		return false;
-	}
-	if (fstat(fi, &st) == -1)           //To obtain file size
-		return false;
-	if ((addr = mmap(NULL, st.st_size, PROT_WRITE, MAP_PRIVATE, fi, 0)) == NULL)
-		return false;
+	while ( 1 ) {
+		// on attend la reception d'une requete HTTP requete pointera vers une ressource allouée par librequest. 
+		if ((requete=getRequest(8080)) == NULL ) return -1; 
 
-	// This is a special HACK since identificateur in C can't have character '-'
+		// Affichage de debug 
+		printf("#########################################\nDemande recue depuis le client %d\n",requete->clientId); 
+		printf("Client [%d] [%s:%d]\n",requete->clientId,inet_ntoa(requete->clientAddress->sin_addr),htons(requete->clientAddress->sin_port));
+		printf("Contenu de la demande %.*s\n\n",requete->len,requete->buf);  
 
-	if (argc == 3) {
-		p = argv[2];
-		printf("searching for %s\n", p);
-		while (*p) {
-			if (*p == '-') { *p = '_'; }
-			p++;
-		}
-		p = argv[2];
+		writeDirectClient(requete->clientId,REPONSE1,strlen(REPONSE1)); 
+		writeDirectClient(requete->clientId,REPONSE2,strlen(REPONSE2)); 
+		endWriteDirectClient(requete->clientId); 
+		requestShutdownSocket(requete->clientId); 
+	// on ne se sert plus de requete a partir de maintenant, on peut donc liberer... 
+	freeRequest(requete); 
 	}
-	// call parser and get results.
-	if (res = parseur(addr, st.st_size)) {
-		_Token* r, * tok;
-		void* root = NULL;
-		root = getRootTree();
-		r = searchTree(root, p);
-		tok = r;
-		while (tok) {
-			int l;
-			char* s;
-			s = getElementValue(tok->node, &l);
-			printf("FOUND [%.*s]\n", l, s);
-			tok = tok->next;
-		}
-		// showTree(root2);
-		purgeElement(&r);
-		purgeTree(&root);
-	}
-	close(fi);
-	printf("res = %d\n", res);
-	return(res);
+	return (1);
 }
 
+#else  
 
+// ceci decrit la methode legacy de renvoi de la reponse  Cf API
+#define REPONSE "HTTP/1.0 200 OK\r\n\r\n"
 
-/*
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
+	message *requete; 
 
-	argc = 2;
-	int num = 321;
-	char snum[10];
-	char* buf[20] = calloc(2, sizeof(char*));
-	// Convert 123 to string [buf]
-	itoa(num, snum, 10);
-	for (int i = 0; i < 10000; i++)
-	{
-		itoa(i, snum, 10);
-		strcat(snum, ".txt");
-		strcat(strcpy(buf[1], "test"), snum);
-		main2(2, buf);
-	}
-	main2();
-}
-*/
+	while ( 1 ) {
+		// on attend la reception d'une requete HTTP requete pointera vers une ressource allouée par librequest. 
+		if ((requete=getRequest(8080)) == NULL ) return -1; 
+
+		// Affichage de debug 
+		printf("#########################################\nDemande recue depuis le client %d\n",requete->clientId); 
+		printf("Client [%d] [%s:%d]\n",requete->clientId,inet_ntoa(requete->clientAddress->sin_addr),htons(requete->clientAddress->sin_port));
+		printf("Contenu de la demande %.*s\n\n",requete->len,requete->buf);  
+
+// ceci decrit la methode legacy de renvoi de la reponse  Cf API
+		// avant d'envoyer une réponse on doit allouer de la mémoire pour la reponse  
+		if ((reponse=malloc(sizeof(message))) != NULL ) { 
+			reponse->len=strlen(REPONSE); 
+
+			// attention reponse->buf doit aussi pointer vers un espace memoire valide. 
+			if ((reponse->buf=malloc(strlen(REPONSE))) != NULL ) {
+				// on recopie la donnée dans la reponse 
+				strncpy(reponse->buf,REPONSE,reponse->len); 
+				reponse->clientId=requete->clientId; 
+				// on envoi la reponse au client 
+				sendReponse(reponse); 
+				// reponse est recopiée par la bibliothèque, on peut tout de suite liberer la memoire
+				free(reponse->buf); 
+			}
+			free(reponse); 
+			//optionnel, ici on clot la connexion tout de suite (HTTP/1.0) 
+			requestShutdownSocket(reponse->clientId); 
+		}
+#endif 		

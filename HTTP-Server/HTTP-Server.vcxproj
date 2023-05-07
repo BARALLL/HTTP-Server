@@ -143,6 +143,7 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="mman.c" />
     <ClCompile Include="parseur.c" />
+    <ClCompile Include="semantic.c" />
     <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
@@ -152,6 +153,7 @@
     <ClInclude Include="api.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="mman.h" />
+    <ClInclude Include="request.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="winunistd.h" />
   </ItemGroup>

@@ -362,3 +362,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /HTTP-Server/fuzzer/testFile
+/HTTP-Server/ne302.tar
