@@ -27,12 +27,15 @@ int main(int argc, char *argv[])
 		printf("Client [%d] [%s:%d]\n",requete->clientId,inet_ntoa(requete->clientAddress->sin_addr),htons(requete->clientAddress->sin_port));
 		printf("Contenu de la demande %.*s\n\n",requete->len,requete->buf);  
 
-		writeDirectClient(requete->clientId,REPONSE1,strlen(REPONSE1)); 
-		writeDirectClient(requete->clientId,REPONSE2,strlen(REPONSE2)); 
-		endWriteDirectClient(requete->clientId); 
-		requestShutdownSocket(requete->clientId); 
-	// on ne se sert plus de requete a partir de maintenant, on peut donc liberer... 
-	freeRequest(requete); 
+		int code = 200;
+
+		if (parseur(requete->buf, requete->len) != 1)
+			code = 400;		//probleme lors du parsing
+		else
+			code = verifRequete(requete);
+
+		sendReponse(code, requete->clientId);
+		endConnexion(&requete);
 	}
 	return (1);
 }

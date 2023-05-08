@@ -28,7 +28,7 @@ char* getElementTag(void* node, int* len)
 
     noeud* n = ((noeud*)node);
 
-    char* str = (char*)malloc(strlen(n->tag));
+    char* str = calloc(strlen(n->tag), sizeof(char));
     if (str)
     {
         strcpy(str, n->tag);
@@ -43,7 +43,7 @@ char* getElementValue(void* node, int* len)
     if (node == NULL)
         return NULL;
 
-    char* str = (char*)malloc(((noeud*)node)->taille);
+    char* str = calloc(((noeud*)node)->taille, sizeof(char));
     if(str)
         strcpy(str, ((noeud*)node)->value);
     *len = ((noeud*)node)->taille;
