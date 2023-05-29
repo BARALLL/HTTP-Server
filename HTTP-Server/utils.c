@@ -134,7 +134,8 @@ void addToken(_Token* _tList, void* node) {
             _tList = newToken;
         else
         {   //add token in queue; keep reference of the end of the linked list for performance purposes
-            _Token* queue = getQueueTree();
+            _Token* queue = _tList;
+            for (; queue->next != NULL; queue->next) { ; }
             if (queue != NULL)
             {
                 queue->next = newToken;
@@ -148,6 +149,26 @@ void addToken(_Token* _tList, void* node) {
         printf("Error S100: Memory not allocated\n");
 }
 
+
+void removeToken(_Token* _tList, _Token* token) {
+    _Token* current = _tList;
+    _Token* prev = NULL;
+
+    while (current != NULL && current != token) {
+        prev = current;
+        current = current->next;
+    }
+
+    if (current == NULL)
+        return;
+
+    if (prev == NULL)
+        _tList = current->next;
+    else
+        prev->next = current->next;
+
+    free(current);
+}
 
 
 // Recursive research in the tree

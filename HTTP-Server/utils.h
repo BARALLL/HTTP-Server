@@ -28,6 +28,9 @@ void insertNode(noeud* node, noeud* pere);
 //add token to list of _Token
 void addToken(_Token* _tList, void* node);
 
+//remove token from list of _Token
+void removeToken(_Token* _tList, _Token* token);
+
 // recursive research in tree, util function for searchTree
 void _searchRecursive(void* node, char* name, _Token** result);
 

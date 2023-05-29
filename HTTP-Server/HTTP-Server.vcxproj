@@ -154,6 +154,7 @@
     <ClInclude Include="global.h" />
     <ClInclude Include="mman.h" />
     <ClInclude Include="request.h" />
+    <ClInclude Include="semantic.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="winunistd.h" />
   </ItemGroup>

@@ -7,7 +7,7 @@ httpparser: parseur.o api.o utils.o main.o
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c
 
-parseur.o: parseur.c
+parseur.o: parseur.c global.h
 	$(CC) $(CFLAGS) -c parseur.c
 
 api.o: api.c api.h

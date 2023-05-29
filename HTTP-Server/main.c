@@ -4,7 +4,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "request.h"   
+#include "request.h"
+#include "semantic.h"
 
 #define REPONSE "HTTP/1.0 200 OK\r\n\r\n"
 
