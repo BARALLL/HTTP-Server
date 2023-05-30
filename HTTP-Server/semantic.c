@@ -10,7 +10,25 @@
 #include <time.h>
 
 
+typedef struct {
+    int statusCode;
+    int httpVersion;
+    int method;
+    int contentLength;
+    char* host;
+    //char* buf;
+    int connection;
+    char* sessionID;
+    _Token* headers;
+} response;
 
+_Token* sessionIDs;
+response* rep;
+
+#define NB_HOST 8
+char hostName[NB_HOST][64];
+char hostPath[NB_HOST][128];
+#define HTTP_CAT "https://http.cat/"
 
 /*
     PDF r�gles a impl�menter /!\
@@ -131,9 +149,7 @@ Verifier une requete : Je sais pas s'il faut tout faire, je pense pas
     int connection;
 */
 
-
-
-void endConnexion(message* requete, response* rep)
+void endConnexion(message* requete)
 {
     purgeTree(getRootTree());
     endWriteDirectClient(requete->clientId);
@@ -150,13 +166,13 @@ int verifRequete(message* requete)
     response* rep = calloc(1, sizeof(response));
     rep->headers = malloc(1, sizeof(_Token));
 
-    statusCode = verifVersion(rep);
+    statusCode = verifVersion();
     if (statusCode != 200)   //simplement pour faire passer l'info du statusCode et de la version utilise en mm temps
         return statusCode;
     else httpVersion -= 200;    //donc httpVersion == 1 correspond a 1.0 et == 2 correspond a 1.1
                                 //(si besoin on peut changer la version par un float pour ecrire directement 1.0/1.1)
 
-    int method = VerifMethod(rep);
+    int method = verifMethod();
     if (method == 501)
     {
         statusCode = 501;
@@ -164,17 +180,17 @@ int verifRequete(message* requete)
         return 501;
     }
     //else call
-    statusCode = verifHost(rep);
+    statusCode = verifHost();
     if (statusCode != 200) {
         return statusCode;
     }
 
-    statusCode = verifContentLength(rep);
+    statusCode = verifContentLength();
     if (statusCode != 200) {
         return statusCode;
     }
 
-    statusCode = verifEncoding(rep);
+    statusCode = verifTransferEncoding();
     if (statusCode != 200) {
         return statusCode;
     }
@@ -208,6 +224,7 @@ int verifRequete(message* requete)
         }
 	}
 
+    free(rep);
     return statusCode;
 }
 
@@ -241,6 +258,7 @@ void writeErrorResponse(message* requete, int code){
     endConnexion(requete, rep);
 }
 
+
 void makeResponse(int statusCode, unsigned int clientId)
 {
     //TODO
@@ -253,7 +271,8 @@ void makeResponse(int statusCode, unsigned int clientId)
     */
 }
 
-void writeHeader(message* requete, response* rep)
+
+void writeHeader(message* requete)
 {
     //if connection == 1 write  Connection: keep-alive else if == 0 Connection: close
     char* content_length = calloc(16, sizeof(char));
@@ -279,7 +298,7 @@ void writeHeader(message* requete, response* rep)
 }
 
 
-int verifVersion(response* rep)
+int verifVersion()
 {
     _Token* versionToken = searchTree(getRootTree(), "HTTP_version");
     int len = 0;
@@ -292,7 +311,7 @@ int verifVersion(response* rep)
 
         if (version)
         {
-            if (strcmp(version, "HTTP/1.0") == 0)
+            if (strcmp(version, "HTTP/1.0") == 0)   //str to maj car version pas sensible a la casse
                 rep->httpVersion = 1;
             else if (strcmp(version, "HTTP/1.1") == 0)      //0.9 peut-etre supporte ?
                 rep->httpVersion = 2;
@@ -311,7 +330,7 @@ int verifVersion(response* rep)
 }
 
 
-int VerifMethod(response* rep)
+int verifMethod()
 {
     _Token* methodToken = searchTree(getRootTree(), "method");
     int len = 0;
@@ -347,7 +366,7 @@ int VerifMethod(response* rep)
 }
 
 
-int verifContentLength(response* rep)
+int verifContentLength()
 {
     _Token* CLToken = searchTree(getRootTree(), "Content-Length");  //pas de tag content length dans le parseur ?
     int len;
@@ -374,7 +393,7 @@ int verifContentLength(response* rep)
 }
 
 
-int verifHost(response* rep)
+int verifHost()
 {
     _Token* hostToken;
     int len;
@@ -405,7 +424,7 @@ int verifHost(response* rep)
 }
 
 
-int verifEncoding(response* rep)
+int verifTransferEncoding()
 {
     _Token* encodingToken = searchTree(getRootTree(), "Transfer_Encoding_header");
     int statusCode = 200;
@@ -428,7 +447,7 @@ int verifEncoding(response* rep)
 
         purgeElement(&encodingToken);
         encodingToken = searchTree(getRootTree(), "transfert_coding");
-        // Parcourir la liste chain�e de transfert_coding et v�rifier que chaque �l�ment est chunked gzip compress deflate
+        // Parcourir la liste chainee de transfert_coding et verifier que chaque element est chunked gzip compress deflate
         _Token* current;
         for (current = encodingToken; current != NULL; current = current->next)
         {
@@ -478,7 +497,7 @@ int verifEncoding(response* rep)
 }
 
 
-int verifConnection(response* rep)
+int verifConnection()
 {
     _Token* connectionToken = searchTree(getRootTree(), "Connection");
     int len;
@@ -530,7 +549,35 @@ int verifConnection(response* rep)
 }
 
 
-int verifAuth(message* requete, response* rep)
+int verifReferer()
+{
+    _Token* refererToken = searchTree(getRootTree(), "Referer");
+    int len = 0;
+    int statusCode = 200;
+
+    char* refererValue = NULL;
+    if (refererToken)
+    {
+        refererValue = getElementValue(refererToken->node, &len);
+
+        if (refererValue)
+        {
+            if (strchr(refererValue, '#') != NULL || strchr(refererValue, '@') != NULL)
+            {
+                statusCode = 400;
+            }
+        }
+    }
+    else
+        return 0;
+
+    //if (version != NULL) free(version);
+    purgeElement(&refererToken);
+    return statusCode;
+}
+
+
+int verifAuth(message* requete)
 {
     _Token* authToken;
     int len;
@@ -557,7 +604,7 @@ int verifAuth(message* requete, response* rep)
                 cpy = base64_decode(buf);
                 buf = calloc(116, sizeof(char)); //size of set-cookie.... = 84 + size of sessionID = 32
                 strcpy(buf, "Set-Cookie: sessionID =");
-                char* sessionID = authUser(requete, rep, cpy);
+                char* sessionID = authUser(requete, cpy);
                 if (sessionID != NULL)
                 {
                     rep->sessionID = sessionID;
@@ -586,7 +633,7 @@ int writeBuf(response* rep, char* str)
 }
 */
 
-int verifCookie(message* requete, response* rep)
+int verifCookie(message* requete)
 {
     _Token* cookieToken;
     int len;
@@ -624,10 +671,10 @@ int verifCookie(message* requete, response* rep)
 }
 
 
-int responseMethodGET(message* requete, response* rep)
+int responseMethodGET(message* requete)
 {
   char* url = NULL;
-  int statusCode = getAbsolutePath(requete, rep, &url);
+  int statusCode = getAbsolutePath(requete, &url);
   if(statusCode != 200) return statusCode;
   if (statusCode != 200) return statusCode;
 
@@ -666,10 +713,10 @@ void getHostPath(message* requete)
 }
 */
 
-int responseMethodHEAD(message* requete, response* rep){
+int responseMethodHEAD(message* requete){
 
   char* url = NULL;
-  int statusCode = getAbsolutePath(requete, rep, &url);
+  int statusCode = getAbsolutePath(requete, &url);
   if(statusCode != 200) return statusCode;
 
   FILE* file = fopen(url, "rb"); //+1 to rm first '/'
@@ -701,7 +748,7 @@ int responseMethodHEAD(message* requete, response* rep){
 }
 
 
-int getAbsolutePath(message* requete, response* rep, char** url)
+int getAbsolutePath(message* requete, char** url)
 {
   _Token* absolute_pathToken = searchTree(getRootTree(), "absolute_path");
   int len_absolute_path;
@@ -742,7 +789,7 @@ int getAbsolutePath(message* requete, response* rep, char** url)
       *url = calloc(strlen(path)+strlen(real_absolute_path)+1, sizeof(char));
       rep->host = path;
 
-      statusCode = isRessourceProtected(rep, url);
+      statusCode = isRessourceProtected(url);
       if (statusCode != 200) return statusCode;
 
       strcpy(*url, path);
@@ -898,7 +945,7 @@ int getHost(char *name, char** url)
 }
 
 
-char* authUser(message* requete, response* rep, char* token)
+char* authUser(message* requete, char* token)
 {
     char* user = strtok(token, ":");
     char* passwd = strtok(NULL, ":");
@@ -908,9 +955,9 @@ char* authUser(message* requete, response* rep, char* token)
         return 0;
     }
     
-    char* shadow = malloc(strlen(rep->host) + strlen("shadw"), sizeof(char));
+    char* shadow = malloc(strlen(rep->host) + strlen(".shadw"), sizeof(char));
     strcpy(shadow, rep->host);
-    strcat(shadow, "shadw");
+    strcat(shadow, ".shadw");
     FILE* fp = fopen(shadow, "r");
     free(shadow);
 
@@ -959,7 +1006,7 @@ char* authUser(message* requete, response* rep, char* token)
 }
 
 
-int isRessourceProtected(response* rep, char* url)
+int isRessourceProtected(char* url)
 {
     if (rep->host == NULL || rep->host == "")   //if client use HTTP/1.1 but no host, it'll sends ""
     {
@@ -967,10 +1014,10 @@ int isRessourceProtected(response* rep, char* url)
         return 0;
     }
 
-    char* prtctd = malloc(strlen(rep->host) + strlen("prtctd") + 1, sizeof(char));
+    char* prtctd = malloc(strlen(rep->host) + strlen(".prtctd") + 1, sizeof(char));
     strcpy(prtctd, rep->host);
-    if (rep->host[strlen(rep->host) - 1] != '/') strcat(prtctd, "/prtctd"); // .../google/api/ or .../google/api
-    else strcat(prtctd, "prtctd");                       //might be already threated by dot segment removal
+    if (rep->host[strlen(rep->host) - 1] != '/') strcat(prtctd, "/.prtctd"); // .../google/api/ or .../google/api
+    else strcat(prtctd, ".prtctd");                       //might be already threated by dot segment removal
     FILE* fp = fopen(prtctd, "r");
     free(prtctd);
 
@@ -988,7 +1035,6 @@ int isRessourceProtected(response* rep, char* url)
                 char* auth = calloc(strlen("WWW - Authenticate: Basic realm=\"example\"\r\n"), sizeof(char));
                 strcpy(auth, "WWW-Authenticate: Basic realm=\"example\"\r\n");
                 addToken(rep->headers, auth);
-                printf("WWW-Authenticate: Basic realm=\"example\"\r\n");
                 return 401;
             }  
         }
@@ -997,7 +1043,12 @@ int isRessourceProtected(response* rep, char* url)
 }
 
 /*no c lib, implementation from https://github.com/elzoughby/Base64 */
-char* base64_decode(char* cipher) {
+char base46_map[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                     'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+                     'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+                     'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
+char* base64_decode(char* cipher) 
+{
 
     char counts = 0;
     char buffer[4];
@@ -1055,7 +1106,7 @@ char* base64_decode(char* cipher) {
 //Pas forcément lire le fichier en une fois OK?
 //2 algos au dessus OK
 
-int createUser(response* rep, char* user, char* passwd, char* groups) {
+int createUser(char* user, char* passwd, char* groups) {
     char* encrypted, * salt;
 
     salt = crypt_gensalt("$5$", 15, NULL, 0);
@@ -1078,10 +1129,10 @@ int createUser(response* rep, char* user, char* passwd, char* groups) {
         return 0;
     }
 
-    char* shadow = malloc(strlen(rep->host) + strlen("shadw")+1, sizeof(char));
+    char* shadow = malloc(strlen(rep->host) + strlen(".shadw")+1, sizeof(char));
     strcpy(shadow, rep->host);
-    if(rep->host[strlen(rep->host)-1] != '/') strcat(shadow, "/shadw"); // .../google/api/ or .../google/api
-    else strcat(shadow, "shadw");                       //might be already threated by dot segment removal
+    if(rep->host[strlen(rep->host)-1] != '/') strcat(shadow, "/.shadw"); // .../google/api/ or .../google/api
+    else strcat(shadow, ".shadw");                       //might be already threated by dot segment removal
     FILE* fp = fopen(shadow, "a");
     free(shadow);
 
